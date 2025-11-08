@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spectre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="//css/lord_of_war.css" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Barlow", system-ui, sans-serif;
+      font-size: 15px;
+      --bg: #05070c;
+      --bg-soft: #0f1320;
+      --surface: #121829;
+      --surface-strong: #1f273d;
+      --surface-glass: rgba(18, 24, 41, 0.75);
+      --text: #f5f7fb;
+      --text-muted: #97a4c0;
+      --accent: #ff8a3d;
+      --accent-glow: rgba(255, 138, 61, 0.2);
+      --border: #242c43;
+      --shadow: 0 30px 70px rgba(8, 10, 18, 0.6);
+      --radius: 22px;
+      --grid-gap: clamp(14px, 1vw + 10px, 24px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% -20%, rgba(255, 138, 61, 0.25), transparent 50%), linear-gradient(180deg, #05070c 0%, #151d30 100%);
+      color: var(--text);
+      padding: clamp(24px, 2vw + 18px, 52px);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    header {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 0;
+    }
+
+    .top-bar .mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(140deg, rgba(255, 138, 61, 0.85), rgba(255, 138, 61, 0.25));
+      box-shadow: 0 12px 24px rgba(255, 138, 61, 0.25);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #0a0f1c;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .top-bar .logo {
+      font-size: 1.3rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .layout {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .content {
+      display: grid;
+      gap: 22px;
+    }
+
+    .search-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .search-input {
+      display: flex;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: var(--shadow);
+      width: 100%;
+    }
+
+    .search-input input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .search-input input:focus {
+      outline: none;
+    }
+
+    .search-input button {
+      background: var(--surface-strong);
+      color: var(--accent);
+      border: 1px solid rgba(255, 138, 61, 0.3);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .filter-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 138, 61, 0.18);
+      border: 1px solid rgba(255, 138, 61, 0.35);
+      color: var(--accent);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(255, 138, 61, 0.18);
+    }
+
+    .filter-badge button {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .clear-filters {
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .catalog {
+      display: grid;
+      gap: 18px;
+    }
+
+    .catalog .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .catalog-grid {
+      display: grid;
+      gap: var(--grid-gap);
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .product-card {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.04), rgba(15, 19, 32, 0.7));
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: 200px auto;
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(255, 138, 61, 0.4);
+    }
+
+    .product-card .media {
+      background: radial-gradient(circle at 50% 20%, rgba(255, 138, 61, 0.2), transparent 55%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .product-card img {
+      width: 75%;
+      height: auto;
+      filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+      border-radius: 10px;
+    }
+
+    .product-card .body {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .product-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .product-card .specs {
+      display: grid;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .product-card .meta-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .product-card .meta-tags span {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pagination button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+    }
+
+    .pagination .active {
+      background: rgba(255, 138, 61, 0.18);
+      color: var(--accent);
+      border-color: rgba(255, 138, 61, 0.4);
+    }
+
+    @media (max-width: 1200px) {
+      .search-toolbar {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .catalog-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .catalog-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      .catalog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 420px) {
+      .catalog-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="top-bar">
+      <span class="mark">SA</span>
+      <span class="logo">Spectre Airsoft</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="content">
+      <div class="search-toolbar">
+        <div class="search-input">
+          <input type="search" placeholder="Buscar por modelo, fabricante, calibre interno, SKU..." />
+          <button>Buscar</button>
+        </div>
+        <div class="active-filters">
+          <% categories.each do |category| %>
+            <% if filters.category? category %>
+              <span class="filter-badge">
+                <%= category %>
+              </span>
+            <% else %>
+              <button class="clear-filters">
+                <%= category %>
+              </button>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="catalog">
+        <div class="catalog-grid">
+          <!-- Card begin -->
+          <% products.each do |product| %>
+            <article class="product-card">
+              <div class="media">
+                <img src="<%= product.list_img %>" alt="<%= product.list_alt %>" />
+              </div>
+              <div class="body">
+                <h3><%= product.title %></h3>
+                <div class="specs">
+                  <% product.specs.each do |prop, value| %>
+                    <span><%= prop %>: <%= value %></span>
+                  <% end %>
+                </div>
+                <div class="meta-tags">
+                  <% product.tags do |tag| %>
+                    <span>tag</span>
+                  <% end %>
+                </div>
+              </div>
+            </article>
+          <% end %>
+          <!-- Card end -->
+        </div>
+
+        <div class="pagination">
+          <% if pagination.prev? %>
+            <button>&larr; Prev</button>
+          <% end%>
+
+          <% pagination.pages.each do |num, is_active| %>
+            <% if is_active %>
+              <button class="active"><%= num %></button>
+            <% else %>
+              <button><%= num %></button>
+            <% end %>
+          <% end %>
+
+          <% if pagination.next? %>
+            <button>Next &rarr;</button>
+          <% end %>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
