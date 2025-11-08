@@ -1,8 +1,4 @@
-# frozen_string_literal: true
+require 'sinatra/base'
 
-require_relative "lord_of_war/version"
-
-module LordOfWar
-  class Error < StandardError; end
-  # Your code goes here...
-end
+require_relative 'lord_of_war/version'
+require_relative 'lord_of_war/api'

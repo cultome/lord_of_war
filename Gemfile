@@ -1,13 +1,13 @@
-# frozen_string_literal: true
+source 'https://rubygems.org'
 
-source "https://rubygems.org"
-
-# Specify your gem's dependencies in lord_of_war.gemspec
 gemspec
 
-gem "irb"
-gem "rake", "~> 13.0"
+gem 'irb'
+gem 'puma', '~> 7.1'
+gem 'rack', '~> 3.2'
+gem 'rake', '~> 13.0'
+gem 'rspec', '~> 3.0'
+gem 'rubocop', '~> 1.21'
+gem 'sinatra', '~> 4.2'
 
-gem "rspec", "~> 3.0"
-
-gem "rubocop", "~> 1.21"
+gem "rackup", "~> 2.2"
