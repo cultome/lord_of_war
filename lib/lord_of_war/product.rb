@@ -37,10 +37,22 @@ class LordOfWar::Product
 
   def specs
     {
-      license: license,
-      maker: maker,
-      fps_range: fps_range,
+      'License' => license,
+      'Maker' => maker,
+      'FPS range' => fps_range,
     }.compact
+  end
+
+  def price
+    return nil if @props['price'].blank?
+
+    "$#{@props.dig('price', 'amount')} #{@props.dig('price', 'currency')}"
+  end
+
+  def fps_range
+    return nil if @props['fps_range'].blank?
+
+    "#{@props["fps_range"]} FPS"
   end
 
   def tags?
@@ -52,11 +64,7 @@ class LordOfWar::Product
   end
 
   def list_img
-    return img if img.is_a? String
-
-    return img.first if img.first.is_a? String
-
-    img.first.first
+    img.first
   end
 
   def license
@@ -67,12 +75,6 @@ class LordOfWar::Product
 
   def maker
     val = @props.fetch('maker', []).join ', '
-
-    val.empty? ? nil : val
-  end
-
-  def fps_range
-    val = (@props.fetch('fps_range', []).first || {}).values_at('low', 'high').compact.join ' - '
 
     val.empty? ? nil : val
   end

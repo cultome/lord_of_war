@@ -15,7 +15,7 @@ require 'lord_of_war'
 class VetaAirsoft < Thor
   include LordOfWar::Utils
 
-  DATA_FOLDER = "#{File.dirname __FILE__}/vetaairsoft_data"
+  DATA_FOLDER = "#{File.dirname __FILE__}/../data/vetaairsoft"
 
   BASE_URL = 'https://vetaairsoft.com'
 
@@ -36,83 +36,126 @@ class VetaAirsoft < Thor
     '/torniquetes',
   ]
 
-  desc 'clean', 'Clean scrapped information'
-  option :output, type: :string, required: true
-  def clean
-    products = JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
-
-    error_reports = {}
-    clean_products = products.each_with_object({}) do |prod, acc|
-      acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
-        key = props_dict.fetch clean_prop_name(key), key
-
-        unless allowed_keys.include? key
-          unless error_reports.key? key
-            error_reports[key] = true
-            puts "[-] Key [#{key}] not allowed"
-          end
-          next
-        end
-
-        clean_value = case key
-                      when 'battery' then clean_battery value
-                      when 'capacity' then clean_capacity value
-                      when 'description' then clean_description value
-                      when 'fire_rate' then clean_fire_rate value
-                      when 'firing_mode' then clean_firing_mode value
-                      when 'fps_range' then clean_fps_range value
-                      when 'gearbox' then clean_gearbox value
-                      when 'height' then clean_height value
-                      when 'hop_up' then clean_hop_up value
-                      when 'inner_barrel' then clean_inner_barrel value
-                      when 'length' then clean_length value
-                      when 'magazine' then clean_magazine value
-                      when 'maker' then clean_maker value
-                      when 'motor' then clean_motor value
-                      when 'outer_barrel' then clean_outer_barrel value
-                      when 'package_contents' then clean_package_contents value
-                      when 'price' then clean_price value
-                      when 'speed' then clean_speed value
-                      when 'system' then clean_system value
-                      when 'thread_direction' then clean_thread_direction value
-                      when 'type' then clean_type value
-                      when 'weight' then clean_weight value
-                      when 'width' then clean_width value
-                      else [value]
-                      end
-
-        acc2[key].concat clean_value
-
-        acc2.merge! extract_title_info(value) if key == 'title'
-      end
-    end.values
-
-    audit_props DATA_FOLDER, clean_products
-
-    File.write options[:output], clean_products.to_json
-
-    puts '[+] Done!'
-  end
+  STAGES = %w[urls details clean audit]
 
   desc 'scrap', 'Scrap site'
+  option :from, type: :string, default: 'urls', desc: "Start scraping from a given stage. Valid options: #{STAGES.join ", "}"
+  option :audit, type: :boolean, deafult: false
   def scrap
-    # urls = scrap_products_list
-    # File.write "#{DATA_FOLDER}/product_urls.json", urls.to_json
-    # urls = JSON.parse File.read("#{DATA_FOLDER}/product_urls.json")
+    initial_stage = STAGES.find_index options[:from]
 
-    # products = scrap_product_details urls
-    # File.write "#{DATA_FOLDER}/product_details.json", products.to_json
+    urls = if initial_stage > 0 # urls
+             puts '[*] Loading URLs from cache...'
+             JSON.parse File.read("#{DATA_FOLDER}/product_urls.json")
+           else
+             urls = scrap_products_list
+             File.write "#{DATA_FOLDER}/product_urls.json", urls.to_json
 
-    # products = JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
-    # audit_props DATA_FOLDER, products
+             urls
+           end
+
+    products = if initial_stage > 1 # details
+                 puts '[*] Loading product details from cache...'
+                 JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
+               else
+                 products = scrap_product_details urls
+                 File.write "#{DATA_FOLDER}/product_details.json", products.to_json
+
+                 products
+               end
+
+    clean_products = if initial_stage > 2 # clean
+                       puts '[*] Loading clean products from cache...'
+                       JSON.parse File.read("#{DATA_FOLDER}/products_clean.json")
+                     else
+                       clean_products = clean_records products
+                       File.write "#{DATA_FOLDER}/products_clean.json", clean_products.to_json
+
+                       clean_products
+                     end
+
+    audit_props DATA_FOLDER, clean_products if options[:audit]
+
     puts '[+] Done!'
   end
 
   no_commands do
+    def clean_records(products)
+      error_reports = {}
+
+      clean_products = products.each_with_object({}) do |prod, acc|
+        acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
+          key = props_dict.fetch clean_prop_name(key), key
+
+          unless allowed_keys.include? key
+            unless error_reports.key? key
+              error_reports[key] = true
+              puts "[-] Key [#{key}] not allowed"
+            end
+            next
+          end
+
+          case key
+          when 'title'
+            acc2.merge! extract_title_info(value)
+            cval = clean_title value
+            acc2[key] = cval
+          when 'battery'
+            cval = clean_battery value
+            acc2[key].concat cval
+          when 'fps_range'
+            cval = clean_fps_range value
+            acc2[key] = cval
+          when 'gearbox'
+            cval = clean_gearbox value
+            acc2[key] = cval
+          when 'hop_up'
+            cval = clean_hop_up value
+            acc2[key] = cval
+          when 'inner_barrel'
+            cval = clean_inner_barrel value
+            acc2[key] = cval
+          when 'magazine'
+            cval = clean_magazine value
+            acc2[key] = cval
+          when 'maker'
+            cval = clean_maker value
+            acc2[key].concat cval
+          when 'motor'
+            cval = clean_motor value
+            acc2[key] = cval
+          when 'price'
+            cval = clean_price value
+            acc2[key] = cval
+          when 'speed'
+            cval = clean_speed value
+            acc2[key] = cval
+          when 'system'
+            cval = clean_system value
+            acc2[key] = cval
+          when 'thread_direction'
+            cval = clean_thread_direction value
+            acc2[key] = cval
+          when 'type'
+            cval = clean_type value
+            acc2[key].concat cval
+          else
+            acc2[key] = value
+          end
+        end
+      end.values
+
+      File.write "#{DATA_FOLDER}/products_clean.json", clean_products.to_json
+
+      clean_products
+    end
+
     def scrap_product_details(urls)
       puts '[*] Scraping products details...'
 
+      count = 0
       urls.map do |url|
+        count += 1
         doc = fetch_html url
 
         record = {
@@ -159,6 +202,7 @@ class VetaAirsoft < Thor
           end
           record.merge!(description: desc.join, **specs)
         end
+        puts "[*] #{count} / #{urls.size} scrapped"
       rescue StandardError => e
         puts e.message
         binding.pry
@@ -307,6 +351,11 @@ class VetaAirsoft < Thor
       }
     end
 
+    def clean_title(value)
+      value
+    end
+
+    # veta airsoft
     def clean_battery(value)
       capacity = value
                  .scan(/([\d,.]+\s*V\s*(\d+\s*mAh)?)/i)
@@ -328,7 +377,7 @@ class VetaAirsoft < Thor
         clean = 'NiMH' if t.downcase == 'nimh'
 
         clean
-      end.uniq
+      end.compact.uniq
 
       return [] if capacity.empty? && amount.empty? && type.empty?
 
@@ -338,48 +387,24 @@ class VetaAirsoft < Thor
       }]
     end
 
-    def clean_capacity(value)
-      [value]
-    end
-
-    def clean_description(value)
-      [value]
-    end
-
-    def clean_fire_rate(value)
-      [value]
-    end
-
-    def clean_firing_mode(value)
-      [value]
-    end
-
     def clean_fps_range(value)
-      [value]
+      value
     end
 
     def clean_gearbox(value)
-      [value]
-    end
-
-    def clean_height(value)
-      [value]
+      value
     end
 
     def clean_hop_up(value)
-      [value]
+      value
     end
 
     def clean_inner_barrel(value)
-      [value]
-    end
-
-    def clean_length(value)
-      [value]
+      value
     end
 
     def clean_magazine(value)
-      [value]
+      value
     end
 
     def clean_maker(value)
@@ -387,42 +412,26 @@ class VetaAirsoft < Thor
     end
 
     def clean_motor(value)
-      [value]
-    end
-
-    def clean_outer_barrel(value)
-      [value]
-    end
-
-    def clean_package_contents(value)
-      [value]
+      value
     end
 
     def clean_price(value)
-      [value]
+      value
     end
 
     def clean_speed(value)
-      [value]
+      value
     end
 
     def clean_system(value)
-      [value]
+      value
     end
 
     def clean_thread_direction(value)
-      [value]
+      value
     end
 
     def clean_type(value)
-      [value]
-    end
-
-    def clean_weight(value)
-      [value]
-    end
-
-    def clean_width(value)
       [value]
     end
   end

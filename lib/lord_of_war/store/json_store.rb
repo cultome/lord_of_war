@@ -8,6 +8,6 @@ class LordOfWar::Store::JsonStore
   end
 
   def get_products(_filters)
-    @products.sample 20
+    @products
   end
 end

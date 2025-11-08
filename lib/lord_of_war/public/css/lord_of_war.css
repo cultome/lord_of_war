@@ -35,6 +35,12 @@
   margin-top: 10px;
 }
 
+.card-link {
+  text-decoration: none;
+  background-image: none;
+  color: var(--primary);
+}
+
 .row {
   justify-content: space-between;
 }
@@ -50,6 +56,9 @@
 
 .card-body {
   padding: 0.5rem !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 img {
@@ -57,6 +66,13 @@ img {
   border-bottom-right-radius: 225px 15px !important;
   border-top-left-radius: 255px 15px !important;
   border-top-right-radius: 15px 225px !important;
+}
+
+img.product-img {
+  width: auto;
+  max-height: 200px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 
 .underline {

@@ -10,15 +10,15 @@ class LordOfWar::Api < Sinatra::Base
     ]
 
     store = LordOfWar::Store::JsonStore.new(
-      'data/vetaairsoft_data/product_details_clean.json',
-      'data/aire_suave_data/aire_suave_accesorios.json',
-      'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
-      'data/aire_suave_data/aire_suave_bbs_y_gas.json',
-      'data/aire_suave_data/aire_suave_clean.json',
-      'data/aire_suave_data/aire_suave_equipo_tactico.json',
-      'data/aire_suave_data/aire_suave_ofertas.json',
-      'data/aire_suave_data/aire_suave_replicas.json',
-      'data/aire_suave_data/aire_suave_sin_categorizar.json'
+      'data/vetaairsoft/products_clean.json'
+      # 'data/aire_suave_data/aire_suave_accesorios.json',
+      # 'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
+      # 'data/aire_suave_data/aire_suave_bbs_y_gas.json',
+      # 'data/aire_suave_data/aire_suave_clean.json',
+      # 'data/aire_suave_data/aire_suave_equipo_tactico.json',
+      # 'data/aire_suave_data/aire_suave_ofertas.json',
+      # 'data/aire_suave_data/aire_suave_replicas.json',
+      # 'data/aire_suave_data/aire_suave_sin_categorizar.json'
     )
 
     products = store.get_products filters

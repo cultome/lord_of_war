@@ -40,15 +40,17 @@
           <!-- Card begin -->
           <% products.each do |product| %>
             <div class="col col-3 border card">
-              <img src="<%= product.list_img %>" />
+              <img class="product-img" src="<%= product.list_img %>" />
               <div class="card-body">
-                <div class="card-title"><%= product.title %></div>
+                <a class="card-link" href="<%= product.url %>" target="_blank">
+                  <div class="card-title"><%= product.title %></div>
+                </a>
 
                 <% if product.specs? %>
                   <div class="card-text specs">
                     <% product.specs.each do |prop, value| %>
                       <div class="spec-item">
-                        <span class="spec-name text-secondary"><%= prop %></span>: <span class="spec-value text-secondary"><%= value %></span>
+                        <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
                       </div>
                     <% end %>
                   </div>
@@ -61,6 +63,10 @@
                     <% end %>
                   </div>
                 <% end%>
+
+                <div class="text-danger">
+                  <%= product.price %>
+                </div>
               </div>
             </div>
           <% end %>

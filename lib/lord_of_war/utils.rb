@@ -1,11 +1,11 @@
 module LordOfWar::Utils
   def audit_props(data_folder, products)
+    puts '[*] Generating audit for properties'
+
     props = Hash.new { |h, k| h[k] = Set.new }
     products.each do |hsh|
       hsh.each do |key, value|
-        [value]
         props[key].add value
-        [value]
       end
     end
 
