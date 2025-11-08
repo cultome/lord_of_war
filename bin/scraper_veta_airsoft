@@ -1,0 +1,431 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift './lib'
+
+require 'brotli'
+require 'csv'
+require 'httparty'
+require 'json'
+require 'nokogiri'
+require 'pry'
+require 'set'
+require 'thor'
+require 'lord_of_war'
+
+class VetaAirsoft < Thor
+  include LordOfWar::Utils
+
+  DATA_FOLDER = "#{File.dirname __FILE__}/vetaairsoft_data"
+
+  BASE_URL = 'https://vetaairsoft.com'
+
+  SECTIONS = [
+    '/accesorios',
+    '/accesorios1',
+    '/caja-sorpresa',
+    '/camping',
+    '/consumibles',
+    '/miras-tacticas',
+    '/mochilas',
+    '/pouches',
+    '/protecciones',
+    '/pulseras',
+    '/replicas',
+    '/ropa',
+    '/seguridad',
+    '/torniquetes',
+  ]
+
+  desc 'clean', 'Clean scrapped information'
+  option :output, type: :string, required: true
+  def clean
+    products = JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
+
+    error_reports = {}
+    clean_products = products.each_with_object({}) do |prod, acc|
+      acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
+        key = props_dict.fetch clean_prop_name(key), key
+
+        unless allowed_keys.include? key
+          unless error_reports.key? key
+            error_reports[key] = true
+            puts "[-] Key [#{key}] not allowed"
+          end
+          next
+        end
+
+        clean_value = case key
+                      when 'battery' then clean_battery value
+                      when 'capacity' then clean_capacity value
+                      when 'description' then clean_description value
+                      when 'fire_rate' then clean_fire_rate value
+                      when 'firing_mode' then clean_firing_mode value
+                      when 'fps_range' then clean_fps_range value
+                      when 'gearbox' then clean_gearbox value
+                      when 'height' then clean_height value
+                      when 'hop_up' then clean_hop_up value
+                      when 'inner_barrel' then clean_inner_barrel value
+                      when 'length' then clean_length value
+                      when 'magazine' then clean_magazine value
+                      when 'maker' then clean_maker value
+                      when 'motor' then clean_motor value
+                      when 'outer_barrel' then clean_outer_barrel value
+                      when 'package_contents' then clean_package_contents value
+                      when 'price' then clean_price value
+                      when 'speed' then clean_speed value
+                      when 'system' then clean_system value
+                      when 'thread_direction' then clean_thread_direction value
+                      when 'type' then clean_type value
+                      when 'weight' then clean_weight value
+                      when 'width' then clean_width value
+                      else [value]
+                      end
+
+        acc2[key].concat clean_value
+
+        acc2.merge! extract_title_info(value) if key == 'title'
+      end
+    end.values
+
+    audit_props DATA_FOLDER, clean_products
+
+    File.write options[:output], clean_products.to_json
+
+    puts '[+] Done!'
+  end
+
+  desc 'scrap', 'Scrap site'
+  def scrap
+    # urls = scrap_products_list
+    # File.write "#{DATA_FOLDER}/product_urls.json", urls.to_json
+    # urls = JSON.parse File.read("#{DATA_FOLDER}/product_urls.json")
+
+    # products = scrap_product_details urls
+    # File.write "#{DATA_FOLDER}/product_details.json", products.to_json
+
+    # products = JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
+    # audit_props DATA_FOLDER, products
+    puts '[+] Done!'
+  end
+
+  no_commands do
+    def scrap_product_details(urls)
+      puts '[*] Scraping products details...'
+
+      urls.map do |url|
+        doc = fetch_html url
+
+        record = {
+          url: url,
+          title: doc.css('h1#product-name').text,
+          price: {
+            amount: doc.css('h4#price_display').text.strip.gsub(/[^0-9.]+/, '').to_f,
+            currency: 'MXN',
+          },
+          img: doc.css('div.swiper-wrapper.align-items-center img')
+                  .map { |i| i['data-srcset'] }
+                  .compact
+                  .map { |url| url.split(', ').map(&:split).map(&:first) }
+                  .flatten
+                  .map { |url| "https:#{url}" },
+        }
+
+        feats = doc.css 'div.product-description.user-content ul.productfeatures li'
+
+        if feats.empty?
+          desc = doc.css('div.product-description.user-content p').map(&:text).join.gsub("\r\n", ' ')
+
+          record.merge! description: desc
+        else
+          texts = feats.flat_map { |e| e.css('strong,span') }.map(&:text)
+
+          specs = {}
+          desc = []
+          idx = 0
+          loop do
+            break if idx >= texts.size
+
+            if texts[idx].end_with? ':'
+              unless texts[idx + 1].strip.end_with? ':'
+                prop = texts[idx][0..-2]
+                specs[props_dict.fetch(prop, prop)] = texts[idx + 1].gsub(' ', ' ').strip
+                idx += 1
+              end
+            else
+              desc << texts[idx]
+            end
+
+            idx += 1
+          end
+          record.merge!(description: desc.join, **specs)
+        end
+      rescue StandardError => e
+        puts e.message
+        binding.pry
+      end
+    end
+
+    def scrap_products_list
+      puts '[*] Scraping product list...'
+
+      link_style = 'div.js-item-description-container.item-description-container.p-2.p-md-4.shadow-none.position-absolute.w-100.transition-soft a'
+      urls = []
+
+      SECTIONS.each do |section|
+        page = 1
+
+        loop do
+          payload = fetch_json "#{BASE_URL}#{section}/page/#{page}/?results_only=true&limit=100&theme=cubo"
+          doc = Nokogiri::HTML payload['html']
+          urls.concat doc.css(link_style).map { |l| l['href'] }.uniq
+
+          break unless payload['has_next']
+
+          page += 1
+        end
+      rescue StandardError => e
+        puts "[-] Error scraping product list: #{e.message}"
+        binding.pry
+      end
+
+      urls
+    end
+
+    def fetch_html(url)
+      body = fetch_page url
+      Nokogiri::HTML body
+    end
+
+    def fetch_json(url)
+      body = fetch_page url
+      JSON.parse body
+    end
+
+    def fetch_page(url)
+      puts "[*] Scrapping #{url}..."
+
+      res = HTTParty.get url, headers: default_headers
+
+      raise "Bad request! #{res.body}" if res.code != 200
+
+      res.body
+    end
+
+    def default_headers
+      {
+        'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0',
+        'Accept' => 'image/webp, application/json',
+        'Accept-Language' => 'en-US,en;q=0.5',
+        'Accept-Encoding' => 'gzip, deflate, br, zstd',
+        'Referer' => 'https://vetaairsoft.com/accesorios1/?mpage=4',
+        'X-Requested-With' => 'XMLHttpRequest',
+        'Connection' => 'keep-alive',
+        'Cookie' => '__cf_bm=mtmwoOFfSm3PFYshoJ3eBaNe6LTCl1ba.UYhMUmQ4L4-1762319728-1.0.1.1-NnLZ8QH9RXpBrLp.kmePDudWfi7Bn1fq8DjU_kdx3XZC34mkyoQw3kQfHrhMV3DPdqNvOKWSt.rUImWJZtqZGsMMomS82rSPGH42ubOhogI; _gcl_au=1.1.833731081.1762318566; newsletter-popup=1; _ga=GA1.2.1714847667.1762318566; _gid=GA1.2.2142166821.1762318566; tn_track=8b6529726fc3324ec5113e896f80b5e5c14526c7%7E3a3eef2c980db2e8d9f9f85bf37f9397b01e5308; x-rand-user=7ec4bfd161aa5e499acde766c63c8a862511a95e%7E3866; tn_tracksession=2675e7b2199cf16d65131eb172883b40b02dc132%7E17dd56264d2a50f92605c7b008499268904f67f5; store_session_payload_1981503=a5be91efb6826f819cb78cf9600339a1cbde7a7b%7EeyJpdiI6IlpianNWbnRjUzZySDVuWHdiOU9OWFE9PSIsInZhbHVlIjoidENnYllKemNXdUt6OU5jNnpWM3JYR0RYTXIvVng4NkRGdmtXTUJCeEZJV3p5eHcrRGM1Ry8vVWJTMy9xclBEbm9zMmorV0VRR1RMdGYrek92dUttcjUySFk4MVNBS3cxUm9rQUN4MGxsSHovaGV6K2x6SWhldDJNQys5YjIvYXBUYWkrZ1NmWDJpR2h1cEZXSXR6Qm9ad0liUHdqczBUS3pOajRuN05MY3kwMWE5RFNqWmFUbTlFYStxeko5UGFqbDhtR1FsSTQvSzUwL05IdU1RMzNKMzNPL0l3cGpsSWhOQnlsMzlreHV3emxueWRQZndsdDlpTEJPcGs1eUFIZ2txZ0Qwa2lUN1pLem95SnZMSkNvelNsMWtQRktsNnJZV2ZjVnFXc2JIKzlxU1A2a2YxYWwwSHN6QUJPRm0xZklEcTFaanpGeG80Y3l1SFFiRS9nWFhnPT0iLCJtYWMiOiJkY2YxMTY1NjE4OTVmNDIwZDU5NzdiM2Y1ZTY3MzIxNTM2MTUwMzBhNmUyZDNmNWNkMWJlNjU4OGE4MjQ1YThlIn0%3D; store_login_session=3be5fcabf721a65238e6e7cedb6c0ad66268ab5f%7Eae4c807e0e484a5cbdce427c3fee3b21297a94d1addc2ce5d49f0d0778c5be8e; _ga_Y01EEPH4TK=GS2.2.s1762318566$o1$g1$t1762320169$j60$l0$h0; _fbp=fb.1.1762318566702.154717759849449291; wpnViewcount=13; TPIDC=hiw3sp-9cwnmtde1-ujhdfbn2t1ar9is5y-eqpdmi48unhwfg-al1-wtc; cwdcc=false; cus=false; wallet-cross-store-impossible=false; _wpnlvusw=1; wpnLastDenial=1762318693034; cookie_consent=1; _wpn_cotpc=1; sdtpc=1',
+        'Sec-Fetch-Dest' => 'empty',
+        'Sec-Fetch-Mode' => 'cors',
+        'Sec-Fetch-Site' => 'same-origin',
+        'Priority' => 'u=4',
+        'TE' => 'trailers',
+      }
+    end
+
+    def allowed_keys
+      @allowed_keys ||= %w[
+        url
+        title
+        price
+        img
+        battery
+        bb
+        charger
+        diameter
+        dimensions
+        fps_range
+        gas
+        gearbox
+        hardness
+        hop_up
+        inner_barrel
+        magazine
+        magnification
+        materials
+        motor
+        range
+        speed
+        system
+        thread_direction
+        type
+        voltage
+      ]
+    end
+
+    def props_dict
+      @props_dict ||= {
+        'Altura' => 'height',
+        'Ancho' => 'width',
+        'Batería' => 'battery',
+        'Caja de cambios' => 'gearbox',
+        'Capacidad del cargador' => 'capacity',
+        'Cargador' => 'magazine',
+        'Cañón exterior' => 'outer_barrel',
+        'Cañón interior' => 'inner_barrel',
+        'Cañón interno' => 'inner_barrel',
+        'Cilindro interno' => 'inner_barrel',
+        'Dirección de la rosca' => 'thread_direction',
+        'Dirección de rosca' => 'thread_direction',
+        'El paquete incluye' => 'package_contents',
+        'Español : Longitud' => 'length',
+        'FPS' => 'fps_range',
+        'Fabricante' => 'maker',
+        'Hopup' => 'hop_up',
+        'Longitud' => 'length',
+        'Longitud del cañón' => 'length',
+        'Modo de disparo' => 'firing_mode',
+        'Modo de disparo ' => 'firing_mode',
+        'Modos de disparo' => 'firing_mode',
+        'Modos de disparo preprogramados' => 'firing_mode',
+        'Motor' => 'motor',
+        'Peso' => 'weight',
+        'Peso (con cargador)' => 'weight',
+        'Peso (con cargador) /o Cargador)' => 'weight',
+        'Peso total' => 'weight',
+        'Rango de FPS' => 'fps_range',
+        'Rondas por segundo' => 'fire_rate',
+        'Sistema de seguridad' => 'system',
+        'Tipo de gas' => 'type',
+        'Velocidad de salida' => 'speed',
+        'Velocidad inicial' => 'speed',
+        'batería de seguridad' => 'battery',
+        'guardamanos ajustable Longitud' => 'length',
+        'incluye' => 'package_contents',
+        'sistema de acción del cerrojo' => 'system',
+        # 'description' => '',
+        # 'img' => '',
+        # 'price' => '',
+        # 'title' => '',
+        # 'url' => '',
+      }
+    end
+
+    def clean_battery(value)
+      capacity = value
+                 .scan(/([\d,.]+\s*V\s*(\d+\s*mAh)?)/i)
+                 .map(&:first)
+                 .compact
+                 .uniq
+                 .map { |v| v.strip.tr 'v,', 'V.' }
+
+      type = value
+             .scan(/(PEQ|LiPo|NiMH|tubo|palo|stick|barra|lapiz|Butterfly|mariposa)/i)
+             .map(&:first)
+             .compact
+             .uniq
+             .map(&:strip)
+
+      type = type.map do |t|
+        clean = 'PEQ' if t.downcase == 'peq'
+        clean = 'LiPo' if t.downcase == 'lipo'
+        clean = 'NiMH' if t.downcase == 'nimh'
+
+        clean
+      end.uniq
+
+      return [] if capacity.empty? && amount.empty? && type.empty?
+
+      [{
+        capacity: capacity,
+        type: type,
+      }]
+    end
+
+    def clean_capacity(value)
+      [value]
+    end
+
+    def clean_description(value)
+      [value]
+    end
+
+    def clean_fire_rate(value)
+      [value]
+    end
+
+    def clean_firing_mode(value)
+      [value]
+    end
+
+    def clean_fps_range(value)
+      [value]
+    end
+
+    def clean_gearbox(value)
+      [value]
+    end
+
+    def clean_height(value)
+      [value]
+    end
+
+    def clean_hop_up(value)
+      [value]
+    end
+
+    def clean_inner_barrel(value)
+      [value]
+    end
+
+    def clean_length(value)
+      [value]
+    end
+
+    def clean_magazine(value)
+      [value]
+    end
+
+    def clean_maker(value)
+      [value]
+    end
+
+    def clean_motor(value)
+      [value]
+    end
+
+    def clean_outer_barrel(value)
+      [value]
+    end
+
+    def clean_package_contents(value)
+      [value]
+    end
+
+    def clean_price(value)
+      [value]
+    end
+
+    def clean_speed(value)
+      [value]
+    end
+
+    def clean_system(value)
+      [value]
+    end
+
+    def clean_thread_direction(value)
+      [value]
+    end
+
+    def clean_type(value)
+      [value]
+    end
+
+    def clean_weight(value)
+      [value]
+    end
+
+    def clean_width(value)
+      [value]
+    end
+  end
+end
+
+VetaAirsoft.start ARGV

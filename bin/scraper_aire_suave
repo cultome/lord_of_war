@@ -1,0 +1,802 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift './lib'
+
+require 'brotli'
+require 'csv'
+require 'httparty'
+require 'json'
+require 'nokogiri'
+require 'pry'
+require 'set'
+require 'thor'
+require 'lord_of_war'
+
+class AireSuave < Thor
+  include LordOfWar::Utils
+
+  DATA_FOLDER = "#{File.dirname __FILE__}/aire_suave_data"
+
+  desc 'clean', 'Clean scrapped information'
+  option :output, type: :string, required: true
+  def clean
+    products = Dir
+               .children(DATA_FOLDER)
+               .select { |file| file.end_with? '.json' }
+               .reduce([]) { |acc, file| acc + JSON.parse(File.read("#{DATA_FOLDER}/#{file}")) }
+
+    error_reports = {}
+    clean_products = products.each_with_object({}) do |prod, acc|
+      acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
+        key = props_dict.fetch clean_prop_name(key), key
+
+        unless allowed_keys.include? key
+          unless error_reports.key? key
+            error_reports[key] = true
+            puts "[-] Key [#{key}] not allowed"
+          end
+          next
+        end
+
+        # handle confusion for charger (battery vs magazine)
+        key = 'magazine' if (key == 'charger') && is_magazine?(value)
+        key = 'charger' if (key == 'magazine') && is_charger?(value)
+        # remove compatibility_fps key
+        key = 'fps_range' if key == 'compatibility_fps'
+
+        clean_value = case key
+                      when 'battery' then clean_battery value
+                      when 'bb' then clean_bb value
+                      when 'charger' then clean_charger value
+                      when 'diameter' then clean_diameter value
+                      when 'dimensions' then clean_dimensions value
+                      when 'fps_range' then clean_fps_range value
+                      when 'gas' then clean_gas value
+                      when 'gearbox' then clean_gearbox value
+                      when 'hardness' then clean_hardness value
+                      when 'hop_up' then clean_hop_up value
+                      when 'inner_barrel' then clean_inner_barrel value
+                      when 'magazine' then clean_magazine value
+                      when 'magnification' then clean_magnification value
+                      when 'materials' then clean_materials value
+                      when 'motor' then clean_motor value
+                      when 'range' then clean_range value
+                      when 'speed' then clean_speed value
+                      when 'system' then clean_system value
+                      when 'thread_direction' then clean_thread_direction value
+                      when 'type' then clean_type value
+                      when 'voltage' then clean_voltage value
+                      else [value]
+                      end
+
+        acc2[key].concat clean_value
+
+        acc2.merge! extract_title_info(value) if key == 'title'
+      end
+    end.values
+
+    # audit_props clean_products
+
+    File.write options[:output], clean_products.to_json
+
+    puts '[+] Done!'
+  end
+
+  desc 'scrap', 'Scrap site'
+  def scrap
+    [
+      'https://airesuave.com.mx/categoria-producto/replicas/',
+      'https://airesuave.com.mx/categoria-producto/accesorios/',
+      'https://airesuave.com.mx/categoria-producto/baterias-y-cargadores/',
+      'https://airesuave.com.mx/categoria-producto/bbs-y-gas/',
+      'https://airesuave.com.mx/categoria-producto/equipo-tactico/',
+      'https://airesuave.com.mx/categoria-producto/sin-categorizar/',
+      'https://airesuave.com.mx/categoria-producto/ofertas/',
+    ].each do |url|
+      prods = scrap_product_list url
+      scrap_details prods
+
+      name = url.split('/').last.gsub '-', '_'
+      File.write "aire_suave_#{name}.json", prods.to_json
+    end
+
+    puts '[+] Done!'
+  end
+
+  no_commands do
+    def scrap_product_list(page_url)
+      name = page_url.split('/').last.gsub '-', '_'
+      puts "[*] Scraping product list [#{name}]..."
+      products = []
+
+      loop do
+        doc = fetch_page page_url
+
+        page_products = doc.css('li.product').map do |product|
+          image = product.css 'div.ope-woo-card-header img.attachment-woocommerce_thumbnail'
+          product_link = product.css 'a.woocommerce-LoopProduct-link'
+          title = product_link.css 'div.ope-woo-card-content-title'
+          price = product_link.css 'div.ope-woo-card-content-price'
+
+          {
+            url: product_link.attr('href').value,
+            title: title.text.strip,
+            price: {
+              amount: price.text.strip.gsub(/[^0-9.]+/, '').to_f,
+              currency: 'MXN',
+            },
+            img: image.attr('src').text,
+          }
+        end
+
+        products.concat page_products
+
+        next_page = doc.css('div.numbers-navigation a.page-numbers.next').first
+
+        break if next_page.nil?
+
+        page_url = next_page.attr 'href'
+      end
+
+      puts "[+] Scraped #{products.size} products!"
+
+      products
+    end
+
+    def scrap_details(products)
+      puts '[*] Scraping product details...'
+
+      products.each do |product|
+        doc = fetch_page product[:url]
+
+        props = doc.css('div.entry-content p')
+                   .map(&:text)
+                   .flat_map { |txt| txt.split("\n") }
+                   .select { |txt| txt.include? ':' }
+                   .each_with_object({}) do |txt, acc|
+          prop, value = txt.gsub(' ', ' ').split(':').map(&:strip)
+
+          acc[props_dict.fetch(clean_prop_name(prop), "*#{prop}*")] = value
+        end
+
+        product.merge! props
+      end
+    end
+
+    def default_headers
+      {
+        'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language' => 'en-US,en;q=0.5',
+        'Accept-Encoding' => 'gzip, deflate, br, zstd',
+        'Referer' => 'https://airesuave.com.mx/tienda/',
+        'Alt-Used' => 'airesuave.com.mx',
+        'Connection' => 'keep-alive',
+        'Cookie' => '_ga=GA1.3.109623131.1758587738; _gid=GA1.3.535023648.1760988306; _gat_gtag_UA_166308562_1=1',
+        'Upgrade-Insecure-Requests' => '1',
+        'Sec-Fetch-Dest' => 'document',
+        'Sec-Fetch-Mode' => 'navigate',
+        'Sec-Fetch-Site' => 'same-origin',
+        'Priority' => 'u=4',
+        'TE' => 'trailers',
+      }
+    end
+
+    def fetch_page(url)
+      puts "[*] Scrapping #{url}..."
+
+      res = HTTParty.get url, headers: default_headers
+
+      raise if res.code != 200
+
+      Nokogiri::HTML res.body
+    end
+
+    def allowed_keys
+      @allowed_keys ||= %w[
+        url
+        title
+        price
+        img
+        battery
+        bb
+        charger
+        diameter
+        dimensions
+        fps_range
+        gas
+        gearbox
+        hardness
+        hop_up
+        inner_barrel
+        magazine
+        magnification
+        materials
+        motor
+        range
+        speed
+        system
+        thread_direction
+        type
+        voltage
+      ]
+    end
+
+    def props_dict
+      @props_dict ||= {
+        # "sig_sauer_proforce_p320_m17_mhs_airsoft_gbb_pistol_model" => :sig_sauer_proforce_p320_m17_mhs_airsoft_model,
+        # 'el_aceite_silicona_angel_custom_viene_pesos_diferentes' => :angel_custom_silicone_oil_three_viscosities,
+        # 'descargo_responsabilidad' => :disclaimer,
+        # 'haga_clic_valor_yardas' => :click_value_at_yards,
+        # 'valor_clic_yardas' => :click_value_at_yards,
+        # 'para' => :for,
+
+        'accesorio' => 'package_contents',
+        'accesorios_incluidos' => 'package_contents',
+        'contenido_paquete' => 'package_contents',
+        'el_paquete_contiene' => 'package_contents',
+        'el_paquete_incluye' => 'package_contents',
+        'incluido' => 'package_contents',
+        'incluye' => 'package_contents',
+        'paquete' => 'package_contents',
+        'paquete_incluye' => 'package_contents',
+        'accin' => 'action',
+        'advertencia' => 'warning',
+        'aviso' => 'warning',
+        'consejo' => 'warning',
+        'nota' => 'warning',
+        'ajuste_graduacin' => 'graduation_adjustment',
+        'ajuste_paralaje' => 'parallax_adjustment',
+        'alcance' => 'range',
+        'rango' => 'range',
+        'alcance_efectivo' => 'range',
+        'alcance_mximo' => 'range',
+        'longitud_rango_traccin' => 'pull_range_length',
+        'fps_range' => 'fps_range',
+        'rango_fps' => 'fps_range',
+        'fps' => 'fps_range',
+        'compatibilidad_fps' => 'fps_range',
+        'rango_ajuste_elevacin' => 'elevation_adjustment_range',
+        'rango_ajuste_elevacin_general' => 'elevation_adjustment_range',
+        'rango_ajuste_viento' => 'wind_adjustment_range',
+        'rango_general_ajuste_viento' => 'wind_adjustment_range',
+        'alivio_ojos' => 'eye_relief',
+        'alivio_ocular' => 'eye_relief',
+        'altura' => 'height',
+        'altura_pulg' => 'height',
+        'altura_cubierta_superior' => 'height',
+        'dimensiones_externas_largo_x_ancho_x_alto' => 'dimensions',
+        'dimensin' => 'dimensions',
+        'dimensiones' => 'dimensions',
+        'ampliacin' => 'magnification',
+        'aumento' => 'magnification',
+        'ancho' => 'width',
+        'ancho_pulg' => 'width',
+        'aoe' => 'aoe',
+        'aplicacin' => 'application',
+        'aplicaciones' => 'application',
+        'caractersticas_aplicaciones' => 'application',
+        'elija_peso_segn_necesidades_aplicacin' => 'application',
+        'arma_base' => 'base_weapon',
+        'barril_interior' => 'inner_barrel',
+        'barril_interno' => 'inner_barrel',
+        'can_interior' => 'inner_barrel',
+        'can_interno' => 'inner_barrel',
+        'caon_interior' => 'inner_barrel',
+        'caon_interno' => 'inner_barrel',
+        'dimetro_interior_can' => 'inner_barrel',
+        'dimetro_can_interior' => 'inner_barrel',
+        'dimetro_interno_barril' => 'inner_barrel',
+        'longitud_can_interior' => 'inner_barrel',
+        'longitud_interior_can' => 'inner_barrel',
+        'longitud_interna_barril' => 'inner_barrel',
+        'longitud_interna_can' => 'inner_barrel',
+        'cilindro_interno' => 'inner_barrel',
+        'longitud_guardamanos' => 'handguard',
+        'can_exterior' => 'outer_barrel',
+        'longitud_can' => 'outer_barrel',
+        'longitud_can_exterior' => 'outer_barrel',
+        'direccin_rosca_cargador' => 'thread_direction',
+        'direccin_rosca_cilindro_exterior' => 'thread_direction',
+        'direccin_cuerda_caon' => 'thread_direction',
+        'direccin_rosca_can_exterior' => 'thread_direction',
+        'direccin_rosca' => 'thread_direction',
+        'direccin_hilo' => 'thread_direction',
+        'direccin_rosca_bb' => 'thread_direction',
+        'hilo' => 'thread',
+        'hilos' => 'thread',
+        'hilos_boca' => 'thread',
+        'rosca' => 'thread',
+        'tipo_rosca' => 'thread',
+        'batera' => 'battery',
+        'batera_seguridad' => 'battery',
+        'batera_incluida' => 'battery',
+        'bateras' => 'battery',
+        'compartimento_batera_deans_lipo_dimensiones' => 'battery',
+        'pilas' => 'battery',
+        'espacio_mximo_batera' => 'battery',
+        'duracin_batera' => 'battery',
+        'compatibilidad_batera' => 'battery',
+        'semiautomtico_automtico_seguridad_batera' => 'battery',
+        'totalmente_actualizable_batera_compatible_tokyo_marui' => 'battery',
+        'bb' => 'bb',
+        'bb_accionada_co2' => 'bb',
+        'bbs' => 'bb',
+        'bobinas_resorte_paso_irregular' => 'coils',
+        'brillo' => 'brightness',
+        'cadencia_fuego' => 'fire_rate',
+        'rondas_segundo' => 'fire_rate',
+        'caja_cambios' => 'gearbox',
+        'caja_engranajes' => 'gearbox',
+        'gearbox' => 'gearbox',
+        'cgearbox' => 'gearbox',
+        'especificaciones_gearbox' => 'gearbox',
+        'especificaciones_caja_cambios' => 'gearbox',
+        'calibre' => 'caliber',
+        'campo_visin_yardas' => 'field_of_view',
+        'campo_visin_m' => 'field_of_view',
+        'campo_visin_extremadamente_amplio' => 'field_of_view',
+        'nmero_bb' => 'capacity',
+        'cantidad' => 'capacity',
+        'capacidad' => 'capacity',
+        'capacidad_carcasas' => 'capacity',
+        'capacidad_magazine' => 'capacity',
+        'magazine_capacity' => 'capacity',
+        'capacidad_revista' => 'capacity',
+        'capacidad_cargador' => 'capacity',
+        'capacidad_cilindro' => 'capacity',
+        'capacidad_rosca_can' => 'capacity',
+        'capasidad' => 'capacity',
+        'caracteristicas' => 'features',
+        'caractersticas' => 'features',
+        'caractersticas_producto' => 'features',
+        'carcteristicas' => 'features',
+        'cargador' => 'charger',
+        'cargador_continuo' => 'magazine',
+        'cargador_rfaga' => 'magazine',
+        'certificaciones' => 'certification',
+        'certificado' => 'certification',
+        'clasificado_para' => 'rated_for',
+        'color' => 'color',
+        'colores_disponibles' => 'color',
+        'de_color' => 'color',
+        'disponible_colores' => 'color',
+        'compatibilidad' => 'compatibility',
+        'compatibilidad_airsoft' => 'compatibility',
+        'marcas_compatibles' => 'compatibility',
+        'compatibilidad_alta_velocidad' => 'compatibility_high_speed',
+        'compatibilidad_bolas_gel' => 'compatibility_gel_balls',
+        'compatibilidad_placas' => 'compatibility_plates',
+        'las_placas_compatibilidad' => 'compatibility_plates',
+        'compatibilidad_tamiya' => 'compatibility_tamiya',
+        'compatibilidad_carcasas' => 'compatibility_shells',
+        'compatibilidad_engranajes' => 'compatibility_gears',
+        'compatibilidad_funda' => 'compatibility_case',
+        'compatibilidad_radio' => 'compatibility_radio',
+        'compatibilidad_cargador' => 'compatibility_charger',
+        'compatibilidad_ocultador_flash' => 'compatibility_flash_hider',
+        'compatibilidad_pistn' => 'compatibility_piston',
+        'compatibilidad_peq_lser' => 'compatibility_small_laser',
+        'compatibilidad_ptica' => 'optical_compatibility',
+        'compatibilidad_tac_light' => 'compatibility_tac_light',
+        'compatible' => 'compatible',
+        'compatible_con' => 'compatible',
+        'compatible_modificacin' => 'compatible',
+        'ensamblado_listo_para_instalar_compatibilidad' => 'compatible',
+        'conector' => 'connector',
+        'corriente' => 'current',
+        'cracteristicas' => 'features',
+        'cuenta' => 'count',
+        'cuerda' => 'strings',
+        'cuerdas' => 'strings',
+        'datos_seguridad' => 'safety_data',
+        'de_potencia' => 'power_rating',
+        'descarga_continua' => 'continuous_discharge',
+        'descripcin' => 'description',
+        'dibujo' => 'drawing',
+        'dientes' => 'teeth',
+        'dimensiones_aprox' => 'dimensions',
+        'dimensiones_exteriores_l_x_w_x_d' => 'dimensions',
+        'dimensiones_externas_lxwxd' => 'dimensions',
+        'dimensiones_interiores_l_x_w_x_d' => 'dimensions',
+        'dimensiones_internas_lxwxd' => 'dimensions',
+        'dimensiones_plegadodesplegado' => 'dimensions',
+        'dimensiones_barra' => 'dimensions',
+        'dimetro' => 'diameter',
+        'dimetro_cabeza' => 'diameter',
+        'dimetro_lente_objetivo' => 'diameter',
+        'dimetro_objetivo' => 'diameter',
+        'dimetro_tubo' => 'diameter',
+        'dimetro_interior' => 'diameter',
+        'dimetro_interior_cilindro' => 'cylinder_diameter',
+        'dimetro_interior_guardamanos' => 'handguard_diameter',
+        'dimetro_objetivo_lente' => 'lens_diameter',
+        'direccin' => 'thread_direction',
+        'direccin_cuerda' => 'thread_direction',
+        'diseo_bullpup' => 'bullpup_design',
+        'diseo_hbrido' => 'hybrid_design',
+        'dureza' => 'hardness',
+        'energa' => 'energy',
+        'enlazables' => 'linkable',
+        'entrada' => 'input',
+        'escala' => 'scale',
+        'espacificaciones' => 'specifications',
+        'espaol' => 'spanish',
+        'especificacin_cargador_inteligente' => 'specifications',
+        'especificaciones' => 'specifications',
+        'especificaciones_conector_carga_pines' => 'specifications',
+        'especificaciones_producto' => 'specifications',
+        'estilo' => 'style',
+        'fabricacin' => 'manufacturing',
+        'fabricado' => 'manufacturing',
+        'fabricante' => 'manufacturing',
+        'fabricantes' => 'manufacturing',
+        'funda_material' => 'materials',
+        'material' => 'materials',
+        'material_ajustable' => 'materials',
+        'material_arma_entrenamiento_paralelo' => 'materials',
+        'material_cartucho' => 'materials',
+        'materiales' => 'materials',
+        'gas' => 'gas',
+        'grosor' => 'thickness',
+        'guantes_asalto_tctico_sistemas_asg_strike_tamao' => 'asg_strike_tactical_assault_gloves_size',
+        'guardamanos_ajustable_longitud' => 'length',
+        'largo' => 'length',
+        'longitud' => 'length',
+        'longitud_boca' => 'length',
+        'longitud_lnea' => 'length',
+        'longitud_traccin_colapsada' => 'length',
+        'longitud_traccin_extendida' => 'length',
+        'longitud_l_x_p' => 'length',
+        'longitud_mm_in' => 'length',
+        'longitud_plegada' => 'length',
+        'longitud_plegada_ajustable' => 'length',
+        'longitud_plegadaextendida' => 'length',
+        'longitud_plegadocolapsadoextendido' => 'length',
+        'longitud_plegadodesplegado' => 'length',
+        'longitud_pulg' => 'length',
+        'longitud_pulgadas' => 'length',
+        'longitud_recomendada_cilindro_interior' => 'length',
+        'longitud_ris' => 'length',
+        'longitud_total' => 'length',
+        'longitud_total_extendida' => 'length',
+        'longitud_total_plegadodesplegado' => 'length',
+        'hop_up' => 'hop_up',
+        'hopup' => 'hop_up',
+        'hopup_seguridad' => 'hop_up',
+        'hopup_recomendado' => 'hop_up',
+        'tipo_salto' => 'hop_up',
+        'ingredientes' => 'materials',
+        'instrucciones' => 'instructions',
+        'interior' => 'interior',
+        'ligero' => 'lightweight',
+        'lser_verde' => 'green_laser',
+        'magazine' => 'magazine',
+        'marca' => 'brand',
+        'max_poder_carga' => 'max_charge_power',
+        'mecanismo_bobinado' => 'winding_mechanism',
+        'medio' => 'medium',
+        'mock_suppressor_compatibilidad' => 'mock_suppressor_compatibility',
+        'no_compatible' => 'not_compatible',
+        'modelo' => 'model',
+        'modelo_tipo' => 'model',
+        'modo' => 'firing_mode',
+        'modo_disparo' => 'firing_mode',
+        'modo_tiro' => 'firing_mode',
+        'modos' => 'firing_mode',
+        'modos_disparo' => 'firing_mode',
+        'modos_disparo_negativos' => 'firing_mode',
+        'modos_fuego' => 'firing_mode',
+        'modos_incendio' => 'firing_mode',
+        'modos_tiro' => 'firing_mode',
+        'motor' => 'motor',
+        'motor_caja_cambios_metal' => 'metal_gearbox_motor',
+        'mx_potencia_carga' => 'max_charge_power',
+        'optimizado_para' => 'optimized_for',
+        'par_modos_disparo' => 'firing_mode_pair',
+        'parte' => 'parts',
+        'partes' => 'parts',
+        'pesado' => 'heavy',
+        'peso' => 'weight',
+        'peso_ajustable' => 'weight',
+        'peso_cargador' => 'weight',
+        'peso_cargador_cargador' => 'weight',
+        'peso_cubierta_superior' => 'weight',
+        'peso_espuma' => 'weight',
+        'peso_g_lb' => 'weight',
+        'peso_oz' => 'weight',
+        'peso_total' => 'weight',
+        'pieza' => 'piece',
+        'potencia' => 'power',
+        'potencia_gas' => 'power',
+        'potencia_proyectil' => 'power',
+        'prdida_evaporacin' => 'evaporative_loss',
+        'precaucin' => 'warning',
+        'precisin' => 'precision',
+        'presin_cartucho' => 'cartridge_pressure',
+        'procesamiento' => 'processing',
+        'proceso' => 'processing',
+        'producto_personalizado' => 'custom_product',
+        'profundidad' => 'depth',
+        'profundidad_base' => 'depth',
+        'profundidad_tapa' => 'depth',
+        'psi' => 'psi',
+        'pupila_salida' => 'exit_pupil',
+        'recomendaciones' => 'recommendations',
+        'referencia_piezas_para_modelos_populares' => 'parts',
+        'relacin_transmisin' => 'gear_ratio',
+        'rendimiento' => 'performance',
+        'resistencia' => 'resistance',
+        'resistencia_niebla' => 'resistance',
+        'resistencia_golpes' => 'resistance',
+        'resistencia_agua' => 'resistance',
+        'retcula' => 'reticle',
+        'retroceso' => 'recoil',
+        'revestimiento_corporal' => 'body_coating',
+        'revestimiento_vidrio' => 'glass_coating',
+        'revista' => 'magazine',
+        'rplica_licencia_colt_escala' => 'licensed_colt_replica_scale',
+        'salida' => 'output',
+        'salida_mxima' => 'output',
+        'salto_seguridad' => 'safety_jump',
+        'separacin_aceite' => 'oil_separation',
+        'sistema' => 'system',
+        'sistema_accin_cerrojo' => 'system',
+        'sistema_gas' => 'system',
+        'sistema_seguridad' => 'system',
+        'superrealismo' => 'hyper_realism',
+        'talla' => 'size',
+        'talla_longitud_arns' => 'size',
+        'tallalongitud_arns' => 'size',
+        'tamao' => 'size',
+        'tamao_lata' => 'size',
+        'tamao_tubo' => 'size',
+        'tiempo_curado_completo' => 'cure_time',
+        'tiempo_curado_manipulacin' => 'cure_time',
+        'tiempo_curado_funcional' => 'cure_time',
+        'tipo' => 'type',
+        'tipo_aluminio' => 'type',
+        'tipo_aumento' => 'type',
+        'tipo_conector' => 'type',
+        'tipo_enchufe' => 'type',
+        'tipo_enchufe_carga' => 'type',
+        'tipo_energa' => 'type',
+        'tipo_extensin_receptor' => 'type',
+        'tipo_gas' => 'type',
+        'tipo_interfaz' => 'type',
+        'tipo_municin' => 'type',
+        'tipo_recubrimiento' => 'type',
+        'tipo_retcula' => 'type',
+        'tipo_revestimiento' => 'type',
+        'usos' => 'uses',
+        'usos_previstos' => 'uses',
+        'vatios_hora' => 'watt_hours',
+        'velocidad' => 'speed',
+        'velocidad_salida' => 'speed',
+        'velocidad_salida_segura' => 'speed',
+        'velocidad_hocico' => 'speed',
+        'velocidad_muzzle' => 'speed',
+        'velocidad_julios' => 'speed',
+        'velocidad_inicial' => 'speed',
+        'viscosidad_aceite' => 'speed',
+        'voltaje' => 'voltage',
+        'voltaje_entrada' => 'voltage',
+        'volumen' => 'volume',
+      }
+    end
+
+    STICK_BATTERIES = %w[tubo palo barra lapiz stick]
+    BUTTERFLY_BATTERIES = %w[butterfly mariposa]
+    def clean_battery(value)
+      capacity = value
+                 .scan(/([\d,.]+\s*V\s*(\d+\s*mAh)?)/i)
+                 .map(&:first)
+                 .compact
+                 .uniq
+                 .map { |v| v.strip.tr 'v,', 'V.' }
+
+      amount = value
+               .scan(/(\d+x\s*(AA|AAA|AEP|CR\d+)\s*)/)
+               .map(&:first)
+               .compact
+               .uniq
+               .map(&:strip)
+
+      type = value
+             .scan(/(PEQ|LiPo|NiMH|tubo|palo|stick|barra|lapiz|Butterfly|mariposa)/i)
+             .map(&:first)
+             .compact
+             .uniq
+             .map(&:strip)
+
+      type = type.map do |t|
+        clean = STICK_BATTERIES.include?(t.downcase) ? 'Stick' : t
+        clean = 'Butterfly' if BUTTERFLY_BATTERIES.include? clean.downcase
+        clean = 'PEQ' if clean.downcase == 'peq'
+        clean = 'LiPo' if clean.downcase == 'lipo'
+        clean = 'NiMH' if clean.downcase == 'nimh'
+
+        clean
+      end.uniq
+
+      return [] if capacity.empty? && amount.empty? && type.empty?
+
+      [{
+        capacity: capacity,
+        amount: amount,
+        type: type,
+      }]
+    end
+
+    def clean_bb(value)
+      size = value.scan(/(\d+[\s*]mm)/)
+      weight = value.scan(/([\d,.]+[\s*]g)/).map(&:first).map { |v| v.strip.tr ',', '.' }
+
+      [{
+        size: size,
+        weight: weight,
+      }]
+    end
+
+    def clean_charger(value)
+      types = value.scan(%r{(gas verde|polímero de litio|Li-Poly|BMS\s*/\s*XH)}i).map(&:first)
+      pines = value.scan(/(\d+)(\s+pin|-Pin)/i).map(&:first).map(&:to_i)
+
+      return [] if types.empty? && pines.empty?
+
+      types = types.map do |v|
+        clean = v.downcase == 'polímero de litio' ? 'Li-Poly' : v
+        clean = 'Gas Verde' if clean.downcase == 'gas verde'
+
+        clean
+      end.uniq
+
+      [{
+        'type' => types,
+        'pines' => pines,
+      }]
+    end
+
+    def clean_diameter(value)
+      [value]
+    end
+
+    def clean_dimensions(value)
+      [value]
+    end
+
+    def clean_fps_range(value)
+      if value =~ /(\d+)(-(\d+))/
+        [{
+          low: ::Regexp.last_match(1).to_i,
+          high: ::Regexp.last_match(3).to_i,
+        }]
+      else
+        []
+      end
+    end
+
+    def clean_gas(value)
+      [value]
+    end
+
+    def clean_gearbox(value)
+      [value]
+    end
+
+    def clean_hardness(value)
+      [value]
+    end
+
+    def clean_hop_up(value)
+      [value]
+    end
+
+    def clean_inner_barrel(value)
+      [value]
+    end
+
+    MAG_TYPES = %w[
+      1911
+      A&K
+      AK
+      APS
+      ARMY
+      AW Custom
+      Classic Army
+      Dboys
+      Elite Force
+      G&G
+      GLOCK Elite Force
+      JG
+      JG
+      KJW
+      King Arms
+      M16
+      M4
+      Matrix
+      P226
+      TM
+      Tokyo Marui
+      Umarex Smoke Wagon
+      WE
+    ]
+    def clean_magazine(value)
+      cap1 = value.match(/(\d+)\s*\+\s*\d+/)
+      cap2 = value.match(/(\d+)\s+(rondas|disparos|cartuchos|balas|municiones)/i)
+      cap3 = value.match(/(\d+)/)
+
+      compatibility = value
+                      .scan(/(#{MAG_TYPES.join "|"})/i)
+                      .map(&:first)
+                      .map(&:strip)
+
+      return [] if cap1.nil? && cap2.nil? && compatibility.nil?
+
+      if !cap1.nil?
+        [{
+          capacity: cap1.match(1).to_i,
+          compatibility: compatibility,
+        }]
+      elsif !cap2.nil?
+        [{
+          capacity: cap2.match(1).to_i + 1,
+          compatibility: compatibility,
+        }]
+      else
+        [{
+          capacity: cap3.match(1).to_i + 1,
+          compatibility: compatibility,
+        }]
+      end
+    rescue StandardError => e
+      binding.pry
+    end
+
+    def clean_magnification(value)
+      [value]
+    end
+
+    def clean_materials(value)
+      [value]
+    end
+
+    def clean_motor(value)
+      [value]
+    end
+
+    def clean_range(value)
+      [value]
+    end
+
+    def clean_speed(value)
+      [value]
+    end
+
+    def clean_system(value)
+      [value]
+    end
+
+    def clean_thread_direction(value)
+      [value]
+    end
+
+    def clean_type(value)
+      [value]
+    end
+
+    def clean_voltage(value)
+      [value]
+    end
+
+    def is_charger?(value)
+      value.match?(/(litio|pared|pines)/i)
+    end
+
+    def is_magazine?(value)
+      value.match?(/(rondas|disparos|cartuchos|balas|municiones|\d+\s*\+\s*\d+|^\d+$)/i)
+    end
+  end
+end
+
+AireSuave.start ARGV
