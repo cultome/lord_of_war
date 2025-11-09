@@ -15,7 +15,7 @@ class LordOfWar::Product
     SINGLE_VALUE_PROP.include? name
   end
 
-  def method_missing(name)
+  def method_missing(name, *args)
     prop = name.to_s
 
     return nil unless @props.key? prop
@@ -41,6 +41,12 @@ class LordOfWar::Product
       'Maker' => maker,
       'FPS range' => fps_range,
     }.compact
+  end
+
+  def price_amount
+    return nil if @props['price'].blank?
+
+    @props.dig 'price', 'amount'
   end
 
   def price

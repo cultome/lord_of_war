@@ -9,11 +9,24 @@
 
 .category-filters {
   display: flex;
-  margin-top: 10px;
+  margin-top: 20px;
+  justify-content: space-between;
 }
 
-.category-filters button {
-  margin-right: 10px;
+.category-filters label:first-child {
+  flex-grow: 1;
+  margin-left: 0;
+}
+
+.category-filters label:last-child {
+  flex-grow: 1;
+  margin-right: 0;
+}
+
+.category-filters label {
+  flex-grow: 1;
+  margin: 0 5px;
+  padding: 0.2rem 0.5rem !important;
 }
 
 .specs {
@@ -114,10 +127,6 @@ img.product-img {
   background-image: none;
 }
 
-.category-filters button {
-  padding: 0.2rem 0.5rem !important;
-}
-
 main.main {
   margin-bottom: 40px;
   padding: 1.3rem;
@@ -175,4 +184,76 @@ footer a {
 .img-fav-button svg {
   width: 24px;
   height: 24px;
+}
+
+.price-filter {
+  margin-top: 20px;
+  justify-content: space-between;
+}
+
+.price-filter,
+.price-filter div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.price-filter div {
+  padding: 0 10px;
+  flex-grow: 1;
+}
+
+.price-filter input {
+  flex-grow: 1;
+  padding: 5px;
+}
+
+.price-filter label {
+  margin-right: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.cat-btn {
+  border-bottom-left-radius: 15px 255px;
+  border-bottom-right-radius: 225px 15px;
+  border-top-left-radius: 255px 15px;
+  border-top-right-radius: 15px 225px;
+  transition: all 235ms ease 0s;
+  box-shadow: 15px 28px 25px -18px rgba(0, 0, 0, 0.2);
+  transition: all 235ms ease-in-out 0s;
+  color: #41403e;
+  color: var(--primary);
+  background-color: #41403e;
+  background-color: var(--main-background);
+  align-self: center;
+  background-image: none;
+  border: 2px solid #41403e;
+  border-color: var(--primary);
+  cursor: pointer;
+  display: inline-block;
+  font-size: 1rem;
+  outline: none;
+  padding: 0.75rem;
+}
+
+.cat-btn:hover {
+  background-color: #d5d5d5;
+}
+
+.hidden:checked + .cat-btn {
+  background-color: #007bff;
+  color: white;
+  box-shadow: inset 0 0 0 2px #005ecb;
+  border: 2px solid #fff;
+}
+
+.no-results {
+  display: flex;
+  margin: 80px 0;
+  justify-content: center;
+  align-items: center;
+  color: var(--danger);
 }

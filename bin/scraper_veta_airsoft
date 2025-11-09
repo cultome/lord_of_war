@@ -145,6 +145,23 @@ class VetaAirsoft < Thor
         end
       end.values
 
+      # Add a search corpus to optimize text query
+      clean_products.each do |p|
+        search_corpus = p
+                        .slice(*%w[title gearbox magazine maker license motor speed system firing_mode description])
+                        .reduce('') do |acc, val|
+          if val.is_a? String
+            acc + " #{val}"
+          elsif val.is_a? Array
+            acc + " #{val.join " "}"
+          elsif val.is_a? Hash
+            acc + " #{val.values.join " "}"
+          end
+        end
+
+        p['search_corpus'] = search_corpus.downcase.tr 'áéíóú', 'aeiou'
+      end
+
       File.write "#{DATA_FOLDER}/products_clean.json", clean_products.to_json
 
       clean_products
@@ -275,30 +292,36 @@ class VetaAirsoft < Thor
 
     def allowed_keys
       @allowed_keys ||= %w[
-        url
-        title
-        price
-        img
         battery
         bb
+        capacity
         charger
+        description
         diameter
         dimensions
+        fire_rate
+        firing_mode
         fps_range
         gas
         gearbox
         hardness
         hop_up
+        img
         inner_barrel
         magazine
         magnification
+        maker
         materials
         motor
+        outer_barrel
+        price
         range
         speed
         system
         thread_direction
+        title
         type
+        url
         voltage
       ]
     end

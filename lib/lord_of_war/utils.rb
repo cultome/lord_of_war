@@ -20,6 +20,134 @@ module LordOfWar::Utils
     end
   end
 
+  def detect_category(value)
+    vdc = value.downcase
+    category = %w[misc consumable gear accessories replica].find do |cat|
+      keyword_category[cat].any? { |cw| vdc.include? cw }
+    end
+
+    return 'unknown' if category.nil?
+
+    category
+  end
+
+  def keyword_category
+    @keyword_category ||= {
+      'aeg' => 'replica',
+      'ametralladora' => 'replica',
+      'anilla rifle' => 'accessories',
+      'anillas' => 'accessories',
+      'audífonos' => 'gear',
+      'balaklava' => 'gear',
+      'barra de luz' => 'misc',
+      'baston' => 'misc',
+      'batería' => 'accessories',
+      'battery' => 'accessories',
+      'binoculares' => 'misc',
+      'bipode' => 'misc',
+      'bolso' => 'gear',
+      'bolígrafo' => 'misc',
+      'botas' => 'gear',
+      'boxer' => 'misc',
+      'brazalete' => 'misc',
+      'brújula' => 'misc',
+      'bufanda' => 'gear',
+      'camisa' => 'gear',
+      'cantimplora' => 'gear',
+      'carabina' => 'replica',
+      'careta' => 'gear',
+      'cargador' => 'accessories',
+      'casco' => 'gear',
+      'chaleco' => 'gear',
+      'chamarra' => 'gear',
+      'cigarrera' => 'misc',
+      'cinto' => 'gear',
+      'cinturón' => 'gear',
+      'coderas' => 'gear',
+      'collar' => 'misc',
+      'combat belt' => 'gear',
+      'cuchillo' => 'misc',
+      'cuerda' => 'gear',
+      'detector de metales' => 'misc',
+      'empuñadura' => 'accessories',
+      'encendedor' => 'misc',
+      'esposas' => 'misc',
+      'ferrocerio' => 'misc',
+      'fornitura' => 'gear',
+      'funda' => 'gear',
+      'gas pimienta' => 'misc',
+      'gasa' => 'misc',
+      'google' => 'gear',
+      'gorro' => 'gear',
+      'grip' => 'accessories',
+      'guantes' => 'gear',
+      'guardamanos' => 'accessories',
+      'hacha' => 'misc',
+      'headset' => 'gear',
+      'helmet' => 'gear',
+      'holster' => 'gear',
+      'kit médico' => 'misc',
+      'lapicero' => 'misc',
+      'llavero' => 'misc',
+      'láser' => 'accessories',
+      'magazine' => 'accessories',
+      'maleta' => 'gear',
+      'mira' => 'accessories',
+      'mochila' => 'gear',
+      'monedero' => 'gear',
+      'montura' => 'accessories',
+      'montura de carro' => 'accessories',
+      'mosquetón' => 'replica',
+      'munición' => 'consumable',
+      'navaja' => 'misc',
+      'pala' => 'misc',
+      'palestina' => 'gear',
+      'pantalon' => 'gear',
+      'parche' => 'misc',
+      'parches' => 'misc',
+      'pasamontañas' => 'gear',
+      'pechera' => 'gear',
+      'piernera' => 'gear',
+      'pinzas' => 'misc',
+      'pistol' => 'replica',
+      'pistola' => 'replica',
+      'pluma' => 'misc',
+      'porta bastón' => 'gear',
+      'porta cargador' => 'gear',
+      'porta esposas' => 'gear',
+      'porta fusil' => 'gear',
+      'porta lampara' => 'gear',
+      'pouch' => 'gear',
+      'pulsera' => 'gear',
+      'recuperador' => 'gear',
+      'reloj' => 'gear',
+      'resortera' => 'misc',
+      'revolver' => 'replica',
+      'riel carabina' => 'accessories',
+      'riel de montura' => 'accessories',
+      'riel picatinny' => 'accessories',
+      'rieles laterales' => 'accessories',
+      'rifle' => 'replica',
+      'rodilleras' => 'gear',
+      'réplica' => 'replica',
+      'shemag' => 'gear',
+      'silbato' => 'misc',
+      'silla' => 'misc',
+      'sobaquera' => 'gear',
+      'soporte de linterna' => 'accessories',
+      'speed loader' => 'misc',
+      'sujetador' => 'gear',
+      'taser' => 'misc',
+      'termo' => 'misc',
+      'tijeras' => 'misc',
+      'torniquete' => 'gear',
+      'unforme' => 'gear',
+      'linterna' => 'accessories',
+    }.each_with_object(Hash.new { |h, v| h[v] = [] }) do |(word, category), acc|
+      acc[category] << word
+    end
+  end
+
   def clean_prop_name(name)
     name
       .downcase
@@ -47,10 +175,12 @@ module LordOfWar::Utils
   end
 
   def extract_title_info(value)
+    props = {
+      'category' => detect_category(value),
+    }
+
     lx = licenses.select { |license| value =~ /#{license}/ }.uniq
     mx = makers.select { |maker| value =~ /#{maker}/ }.uniq
-
-    props = {}
 
     return props if lx.empty? && mx.empty?
 

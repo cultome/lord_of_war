@@ -1,120 +1,128 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Lord of War</title>
-  <link rel="stylesheet" href="https://unpkg.com/papercss@1.9.2/dist/paper.min.css" />
-  <link href="/css/lord_of_war.css" rel="stylesheet" />
-</head>
-<body>
-  <header class="underline container header">
-    <a href="#"><h3>Lord of War</h3></a>
-    <a href="#">cultome</a>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lord of War</title>
+    <link rel="stylesheet" href="https://unpkg.com/papercss@1.9.2/dist/paper.min.css" />
+    <link href="/css/lord_of_war.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="underline container header">
+      <a href="#"><h3>Lord of War</h3></a>
+      <a href="#">cultome</a>
+    </header>
 
-  <main class="border paper container main">
-    <div>
-      <div class="row">
-        <div class="col-12 search-bar">
-          <input type="search" placeholder="Buscar por modelo, fabricante, calibre interno, SKU..." />
-          <button>Buscar</button>
-        </div>
-
-        <div class="col-12 category-filters">
-          <% categories.each do |category| %>
-            <% if filters.category? category %>
-              <button class="background-secondary">
-                <%= category %>
-              </button>
-            <% else %>
-              <button>
-                <%= category %>
-              </button>
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-
-      <div>
+    <main class="border paper container main">
+      <form action="/product-list" method="GET">
         <div class="row">
-          <!-- Card begin -->
-          <% products.each do |product| %>
-            <div class="col col-3 border card">
-              <div class="img-wrapper">
-                <img class="product-img" src="<%= product.list_img %>" />
-                <button class="img-fav-button">
-                  <svg viewBox="0 0 48 48" id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" fill="#000000">
-                    <path style="stroke-linecap:round;stroke-linejoin:round;" d="M15.63,7.15A10.12,10.12,0,0,0,7.77,23.66h0L24,42.71,40.07,23.85l.08-.09.08-.1h0A10.13,10.13,0,1,0,24,11.58a10.1,10.1,0,0,0-8.36-4.43Z"></path>
-                  </svg>
-                </button>
-              </div>
+          <div class="col-12 search-bar">
+            <input type="search" name="search" value="<%= filters.search_input %>" placeholder="Buscar por modelo, fabricante, licencia, descipcion..." />
+            <button>Buscar</button>
+          </div>
 
-              <div class="card-body">
-                <a class="card-link" href="<%= product.url %>" target="_blank">
-                  <div class="card-title"><%= product.title %></div>
-                </a>
-
-                <% if product.specs? %>
-                  <div class="card-text specs">
-                    <% product.specs.each do |prop, value| %>
-                      <div class="spec-item">
-                        <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
-                      </div>
-                    <% end %>
-                  </div>
-                <% end %>
-
-                <% if product.tags? %>
-                  <div>
-                    <% product.tags do |tag| %>
-                      <div>tag</div>
-                    <% end %>
-                  </div>
-                <% end%>
-
-                <div class="text-danger">
-                  <%= product.price %>
-                </div>
-              </div>
-            </div>
-          <% end %>
-          <!-- Card end -->
-        </div>
-
-        <div class="row pagination">
-          <% if pagination.prev? %>
-            <div class="col">
-              <button>&larr; Prev</button>
-            </div>
-          <% end%>
-
-          <% pagination.pages.each do |num, is_active| %>
-            <% if is_active %>
-              <div class="col">
-                <button><%= num %></button>
-              </div>
-            <% else %>
-              <div class="col">
-                <button><%= num %></button>
-              </div>
+          <div class="col-12 category-filters">
+            <% categories.each do |key, label| %>
+              <input type="checkbox" id="<%= key %>" name="categories[]" value="<%= key %>" class="hidden" <%= filters.category?(key) ? 'checked' : '' %> onchange="this.form.submit()">
+              <label for="<%= key %>" class="cat-btn"><%= label %></label>
             <% end %>
-          <% end %>
+          </div>
 
-          <% if pagination.next? %>
+          <div class="col-12 price-filter">
+            <label for="price">Rango de precios</label>
+            <div>
+              <label for="min-price">desde</label>
+              <input type="number" name="min-price" value="<%= filters.min_price_input %>" placeholder="<%= price_range[:min_placeholder] %>" min="<%= price_range[:min] %>" max="<%= price_range[:max] %>">
+            </div>
+
+            <div>
+              <label for="max-price">hasta</label>
+              <input type="number" name="max-price" value="<%= filters.max_price_input %>" placeholder="<%= price_range[:max_placeholder] %>" min="<%= price_range[:min] %>" max="<%= price_range[:max] %>">
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="row">
+        <% if products.empty? %>
+          <div class="col-12 no-results">No hay resultados para tus criterios</div>
+        <% end %>
+
+        <!-- Card begin -->
+        <% products.each do |product| %>
+          <div class="col col-3 border card">
+            <div class="img-wrapper">
+              <img class="product-img" src="<%= product.list_img %>" />
+              <button class="img-fav-button">
+                <svg viewBox="0 0 48 48" id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" fill="#000000">
+                  <path style="stroke-linecap:round;stroke-linejoin:round;" d="M15.63,7.15A10.12,10.12,0,0,0,7.77,23.66h0L24,42.71,40.07,23.85l.08-.09.08-.1h0A10.13,10.13,0,1,0,24,11.58a10.1,10.1,0,0,0-8.36-4.43Z"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="card-body">
+              <a class="card-link" href="<%= product.url %>" target="_blank">
+                <div class="card-title"><%= product.title %></div>
+              </a>
+
+              <% if product.specs? %>
+                <div class="card-text specs">
+                  <% product.specs.each do |prop, value| %>
+                    <div class="spec-item">
+                      <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <% if product.tags? %>
+                <div>
+                  <% product.tags do |tag| %>
+                    <div>tag</div>
+                  <% end %>
+                </div>
+              <% end%>
+
+              <div class="text-danger">
+                <%= product.price %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        <!-- Card end -->
+      </div>
+
+      <div class="row pagination">
+        <% if pagination.prev? %>
+          <div class="col">
+            <button>&larr; Prev</button>
+          </div>
+        <% end%>
+
+        <% pagination.pages.each do |num, is_active| %>
+          <% if is_active %>
             <div class="col">
-              <button>Next &rarr;</button>
+              <button><%= num %></button>
+            </div>
+          <% else %>
+            <div class="col">
+              <button><%= num %></button>
             </div>
           <% end %>
-        </div>
-      </div>
-    </div>
-  </main>
+        <% end %>
 
-  <footer>
-    made with 
-    <svg version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve" fill="#FF0000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <style type="text/css">  .st0{fill:#FF0000;}  </style> <g> <path class="st0" d="M509.915,2.067C498.446-9.417,371.29,29.161,331.086,60.974L451.04,180.927 C482.853,140.708,521.415,13.567,509.915,2.067z"></path> <path class="st0" d="M268.743,122.677l-41.344,10.328L42.211,318.208l12.047,12.063l-16.359,16.344l-12.063-12.047L0.008,360.396 l151.594,151.608l25.844-25.844l-12.063-12.063l16.359-16.359l12.063,12.047l185.188-185.171l10.344-41.359 c0,0,18.703-18.719,48.25-48.234L316.993,74.442C287.461,103.942,268.743,122.677,268.743,122.677z"></path> </g> </g></svg>
-    by
-    <a href="#">cultome</a>
-  </footer>
-</body>
+        <% if pagination.next? %>
+          <div class="col">
+            <button>Next &rarr;</button>
+          </div>
+        <% end %>
+      </div>
+    </main>
+
+    <footer>
+      made with 
+      <svg version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve" fill="#FF0000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <style type="text/css">  .st0{fill:#FF0000;}  </style> <g> <path class="st0" d="M509.915,2.067C498.446-9.417,371.29,29.161,331.086,60.974L451.04,180.927 C482.853,140.708,521.415,13.567,509.915,2.067z"></path> <path class="st0" d="M268.743,122.677l-41.344,10.328L42.211,318.208l12.047,12.063l-16.359,16.344l-12.063-12.047L0.008,360.396 l151.594,151.608l25.844-25.844l-12.063-12.063l16.359-16.359l12.063,12.047l185.188-185.171l10.344-41.359 c0,0,18.703-18.719,48.25-48.234L316.993,74.442C287.461,103.942,268.743,122.677,268.743,122.677z"></path> </g> </g></svg>
+        by
+        <a href="#">cultome</a>
+    </footer>
+  </body>
 </html>

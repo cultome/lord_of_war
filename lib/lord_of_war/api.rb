@@ -1,13 +1,11 @@
 class LordOfWar::Api < Sinatra::Base
   get '/product-list' do
     filters = LordOfWar::Filters.new(
-      categories: ['Réplicas']
+      search: params['search'],
+      categories: params['categories'],
+      min_price: params['min-price'],
+      max_price: params['max-price']
     )
-
-    categories = [
-      'Réplicas',
-      'Equipo táctico',
-    ]
 
     store = LordOfWar::Store::JsonStore.new(
       'data/vetaairsoft/products_clean.json'
@@ -23,16 +21,42 @@ class LordOfWar::Api < Sinatra::Base
 
     products = store.get_products filters
 
+    prices = products.map(&:price_amount).reject { |amount| amount <= 0 }
+    price_min = prices.min
+    price_max = prices.max
+
+    price_range = {
+      min: price_min,
+      min_placeholder: "$#{to_money_format price_min}",
+      max: price_max,
+      max_placeholder: "$#{to_money_format price_max}",
+    }
+
     pagination = LordOfWar::Pagination.new
 
     erb(
       :product_list,
       locals: {
         products: products,
-        categories: categories,
+        categories: category_labels,
         filters: filters,
         pagination: pagination,
+        price_range: price_range,
       }
     )
+  end
+
+  def to_money_format(value)
+    value.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+  end
+
+  def category_labels
+    @category_labels = {
+      'replica' => 'Replicas',
+      'accessories' => 'Accesorios',
+      'gear' => 'Equipo Tactico',
+      'consumable' => 'Insumos',
+      'misc' => 'Misc',
+    }
   end
 end
