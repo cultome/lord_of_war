@@ -98,10 +98,14 @@
             </div>
           <% end%>
 
-          <% pagination.pages.each do |num, is_active| %>
+          <% pagination.pages.each do |num, is_active, ellipsis| %>
             <div class="col">
-              <input type="radio" id="p<%= num %>" name="page" value="<%= num %>" class="hidden" onchange="this.form.submit()">
-              <label for="p<%= num %>" class="cat-btn <%= is_active ? 'active' : '' %>"><%= num %></label>
+              <% if ellipsis %>
+                <div class="ellipsis">...</div>
+              <% else %>
+                <input type="radio" id="p<%= num %>" name="page" value="<%= num %>" class="hidden" onchange="this.form.submit()">
+                <label for="p<%= num %>" class="cat-btn <%= is_active ? 'active' : '' %>"><%= num %></label>
+              <% end %>
             </div>
           <% end %>
 

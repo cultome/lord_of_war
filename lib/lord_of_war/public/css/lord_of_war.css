@@ -263,3 +263,10 @@ footer a {
   align-items: center;
   color: var(--danger);
 }
+
+.ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
