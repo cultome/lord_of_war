@@ -19,9 +19,11 @@ class LordOfWar::Api < Sinatra::Base
       # 'data/aire_suave_data/aire_suave_sin_categorizar.json'
     )
 
-    products = store.get_products filters
+    pagination = LordOfWar::Pagination.new params['page']
 
-    prices = products.map(&:price_amount).reject { |amount| amount <= 0 }
+    products = store.get_products filters, pagination
+
+    prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
     price_max = prices.max
 
@@ -31,8 +33,6 @@ class LordOfWar::Api < Sinatra::Base
       max: price_max,
       max_placeholder: "$#{to_money_format price_max}",
     }
-
-    pagination = LordOfWar::Pagination.new
 
     erb(
       :product_list,
