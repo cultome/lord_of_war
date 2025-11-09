@@ -46,7 +46,7 @@ class LordOfWar::Product
   def price
     return nil if @props['price'].blank?
 
-    "$#{@props.dig('price', 'amount')} #{@props.dig('price', 'currency')}"
+    "$#{@props.dig "price", "amount"} #{@props.dig "price", "currency"}"
   end
 
   def fps_range
@@ -64,7 +64,7 @@ class LordOfWar::Product
   end
 
   def list_img
-    img.first
+    img.first || '/img/noproduct.png'
   end
 
   def license

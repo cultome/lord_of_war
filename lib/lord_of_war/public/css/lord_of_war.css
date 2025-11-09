@@ -69,6 +69,7 @@ img {
 }
 
 img.product-img {
+  min-height: 150px;
   width: auto;
   max-height: 200px;
   aspect-ratio: 1 / 1;
@@ -137,4 +138,41 @@ footer svg {
 
 footer a {
   margin: 0 5px;
+}
+
+.img-wrapper {
+  position: relative; /* El contenedor será el punto de referencia */
+  display: inline-block; /* Permite que se ajuste al tamaño de la imagen */
+}
+
+.img-fav-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.img-fav-button:hover {
+  box-shadow: none;
+}
+
+.img-fav-button svg {
+  stroke: var(--danger);
+  stroke-width: 4px;
+  fill: rgba(0, 0, 0, 0);
+}
+
+.img-fav-button svg:hover {
+  fill: var(--danger);
+}
+
+.img-fav-button svg {
+  width: 24px;
+  height: 24px;
 }
