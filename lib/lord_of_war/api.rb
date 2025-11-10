@@ -29,7 +29,7 @@ class LordOfWar::Api < Sinatra::Base
     }
 
     erb(
-      :fav_list,
+      :favs,
       locals: {
         products: products,
         categories: category_labels,
@@ -67,7 +67,7 @@ class LordOfWar::Api < Sinatra::Base
     }
 
     erb(
-      :product_list,
+      :catalog,
       locals: {
         products: products,
         categories: category_labels,

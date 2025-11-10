@@ -5,6 +5,11 @@
 .search-bar input {
   flex-grow: 1;
   margin-right: 10px;
+  padding: 5px;
+}
+
+.search-bar button {
+  padding: 5px;
 }
 
 .category-filters {
@@ -39,9 +44,6 @@
 
 .spec-item .spec-name {
   font-weight: bold;
-}
-
-.spec-item .spec-value {
 }
 
 .card {
