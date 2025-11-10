@@ -177,6 +177,14 @@ footer a {
   fill: rgba(0, 0, 0, 0);
 }
 
+.img-fav-button.active svg {
+  fill: var(--danger);
+}
+
+.img-fav-button.active svg:hover {
+  fill: none;
+}
+
 .img-fav-button svg:hover {
   fill: var(--danger);
 }

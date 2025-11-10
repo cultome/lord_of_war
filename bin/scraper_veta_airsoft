@@ -139,6 +139,9 @@ class VetaAirsoft < Thor
           when 'type'
             cval = clean_type value
             acc2[key].concat cval
+          when 'url'
+            acc2[key] = value
+            acc2['id'] = Digest::SHA256.hexdigest(value)[0, 16]
           else
             acc2[key] = value
           end

@@ -7,21 +7,10 @@ class LordOfWar::Api < Sinatra::Base
       max_price: params['max-price']
     )
 
-    store = LordOfWar::Store::JsonStore.new(
-      'data/vetaairsoft/products_clean.json'
-      # 'data/aire_suave_data/aire_suave_accesorios.json',
-      # 'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
-      # 'data/aire_suave_data/aire_suave_bbs_y_gas.json',
-      # 'data/aire_suave_data/aire_suave_clean.json',
-      # 'data/aire_suave_data/aire_suave_equipo_tactico.json',
-      # 'data/aire_suave_data/aire_suave_ofertas.json',
-      # 'data/aire_suave_data/aire_suave_replicas.json',
-      # 'data/aire_suave_data/aire_suave_sin_categorizar.json'
-    )
-
     pagination = LordOfWar::Pagination.new params['page']
 
     products = store.get_products filters, pagination
+    favs = store.get_favs_for products, 'username'
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -42,8 +31,15 @@ class LordOfWar::Api < Sinatra::Base
         filters: filters,
         pagination: pagination,
         price_range: price_range,
+        favs: favs,
       }
     )
+  end
+
+  post '/fav-toggle/:id' do
+    product = store.find_product params[:id]
+    new_state_is_active = store.toggle_fav product.id, 'username'
+    partial :fav_button, product: product, is_active: new_state_is_active
   end
 
   def to_money_format(value)
@@ -58,5 +54,25 @@ class LordOfWar::Api < Sinatra::Base
       'consumable' => 'Insumos',
       'misc' => 'Misc',
     }
+  end
+
+  def store
+    @store ||= LordOfWar::Store::JsonStore.new(
+      'data/vetaairsoft/products_clean.json'
+      # 'data/aire_suave_data/aire_suave_accesorios.json',
+      # 'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
+      # 'data/aire_suave_data/aire_suave_bbs_y_gas.json',
+      # 'data/aire_suave_data/aire_suave_clean.json',
+      # 'data/aire_suave_data/aire_suave_equipo_tactico.json',
+      # 'data/aire_suave_data/aire_suave_ofertas.json',
+      # 'data/aire_suave_data/aire_suave_replicas.json',
+      # 'data/aire_suave_data/aire_suave_sin_categorizar.json'
+    )
+  end
+
+  helpers do
+    def partial(template, locals = {})
+      erb :"_#{template}", layout: false, locals: locals
+    end
   end
 end
