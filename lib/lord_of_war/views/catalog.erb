@@ -45,10 +45,10 @@
           </a>
 
           <% if product.specs? %>
-            <div class="card-text specs">
+            <div class="card-text specs text-secondary">
               <% product.specs.each do |prop, value| %>
-                <div class="spec-item">
-                  <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
+                <div class="spec-value" title="<%= prop %>">
+                  <%= value %>
                 </div>
               <% end %>
             </div>

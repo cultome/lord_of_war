@@ -3,6 +3,15 @@ class LordOfWar::Api < Sinatra::Base
     redirect to('/catalog')
   end
 
+  get '/profile' do
+    erb(
+      :profile,
+      locals: {
+        section_title: 'Mi perfil',
+      }
+    )
+  end
+
   get '/favs' do
     filters = LordOfWar::Filters.new(
       username: 'username',
