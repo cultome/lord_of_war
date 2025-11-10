@@ -1,11 +1,13 @@
 class LordOfWar::Filters
-  attr_reader :search, :categories, :min_price, :max_price
+  attr_reader :username, :search, :categories, :min_price, :max_price, :favs_only
 
-  def initialize(search:, categories:, min_price:, max_price:)
+  def initialize(username:, search:, categories:, min_price:, max_price:, favs_only: false)
+    @username = username
     @search = search
     @categories = categories.blank? ? [] : categories
     @min_price = min_price.blank? ? 0 : min_price.to_i
     @max_price = max_price.blank? ? 1_000_000 : max_price.to_i
+    @favs_only = favs_only
   end
 
   def search_empty?
@@ -30,5 +32,9 @@ class LordOfWar::Filters
 
   def search_input
     @search.blank? ? nil : @search
+  end
+
+  def favs_only?
+    @favs_only
   end
 end

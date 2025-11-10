@@ -154,7 +154,7 @@ footer a {
   display: inline-block; /* Permite que se ajuste al tamaño de la imagen */
 }
 
-.img-fav-button {
+.img-action-btn {
   position: absolute;
   top: 0;
   right: 0;
@@ -167,31 +167,49 @@ footer a {
   padding: 0;
 }
 
-.img-fav-button:hover {
+.img-action-btn:hover {
   box-shadow: none;
 }
 
-.img-fav-button svg {
+.img-action-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fav-btn svg {
   stroke: var(--danger);
   stroke-width: 4px;
   fill: rgba(0, 0, 0, 0);
 }
 
-.img-fav-button.active svg {
+.fav-btn.active svg {
   fill: var(--danger);
 }
 
-.img-fav-button.active svg:hover {
+.fav-btn svg:hover {
+  fill: var(--danger);
+}
+
+.fav-btn.active svg:hover {
   fill: none;
 }
 
-.img-fav-button svg:hover {
-  fill: var(--danger);
+.trash-btn svg {
+  stroke: var(--danger);
+  stroke-width: 4px;
+  fill: rgba(0, 0, 0, 0);
 }
 
-.img-fav-button svg {
-  width: 24px;
-  height: 24px;
+.trash-btn.active svg {
+  fill: var(--muted);
+}
+
+.trash-btn svg:hover {
+  fill: var(--muted);
+}
+
+.trash-btn.active svg:hover {
+  fill: none;
 }
 
 .price-filter {
@@ -277,4 +295,31 @@ footer a {
   align-items: center;
   justify-content: center;
   height: 100%;
+}
+
+.section-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--primary);
+  margin: 0 0 20px 0;
+}
+
+.align-right {
+  display: flex;
+  justify-content: end;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-around;
+}
+
+.navbar a {
+  display: flex;
+  align-items: baseline;
+}
+
+.navbar svg {
+  width: 30px;
 }

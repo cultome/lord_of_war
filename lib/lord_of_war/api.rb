@@ -1,6 +1,49 @@
 class LordOfWar::Api < Sinatra::Base
-  get '/product-list' do
+  get '/' do
+    redirect to('/catalog')
+  end
+
+  get '/favs' do
     filters = LordOfWar::Filters.new(
+      username: 'username',
+      search: params['search'],
+      categories: params['categories'],
+      min_price: params['min-price'],
+      max_price: params['max-price'],
+      favs_only: true
+    )
+
+    pagination = LordOfWar::Pagination.new params['page']
+
+    products = store.get_products filters, pagination
+
+    prices = products.map(&:price_amount).select(&:positive?)
+    price_min = prices.min
+    price_max = prices.max
+
+    price_range = {
+      min: price_min,
+      min_placeholder: "$#{to_money_format price_min}",
+      max: price_max,
+      max_placeholder: "$#{to_money_format price_max}",
+    }
+
+    erb(
+      :fav_list,
+      locals: {
+        products: products,
+        categories: category_labels,
+        filters: filters,
+        pagination: pagination,
+        price_range: price_range,
+        section_title: 'Mi Warlist',
+      }
+    )
+  end
+
+  get '/catalog' do
+    filters = LordOfWar::Filters.new(
+      username: 'username',
       search: params['search'],
       categories: params['categories'],
       min_price: params['min-price'],
@@ -10,7 +53,7 @@ class LordOfWar::Api < Sinatra::Base
     pagination = LordOfWar::Pagination.new params['page']
 
     products = store.get_products filters, pagination
-    favs = store.get_favs_for products, 'username'
+    favs = store.filter_by_favs products, 'username'
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -32,8 +75,15 @@ class LordOfWar::Api < Sinatra::Base
         pagination: pagination,
         price_range: price_range,
         favs: favs,
+        section_title: 'Catalogo',
       }
     )
+  end
+
+  post '/fav-remove/:id' do
+    product = store.find_product params[:id]
+    store.remove_fav product.id, 'username'
+    '' # remove element
   end
 
   post '/fav-toggle/:id' do
