@@ -326,3 +326,90 @@ footer a {
 .navbar svg {
   width: 30px;
 }
+
+.my-gear {
+  display: flex;
+  justify-content: center;
+}
+
+.my-gear svg {
+}
+
+#bgcasco {
+  fill: none;
+}
+
+#bgcasco:hover {
+  fill: #6b8e23;
+}
+
+#bgcara {
+  fill: none;
+}
+
+#bgcara:hover {
+  fill: #dbb18c;
+}
+
+#bgtorso {
+  fill: none;
+}
+
+#bgtorso:hover {
+  fill: #6b8e23;
+}
+
+#bgcinto {
+  fill: none;
+}
+
+#bgcinto:hover {
+  fill: #4b5320;
+}
+
+#bgpantalon {
+  fill: none;
+}
+#bgpantalon:hover {
+  fill: #6b8e23;
+}
+
+#bgcalzado {
+  fill: none;
+}
+
+#bgcalzado:hover {
+  fill: #dbb18c;
+}
+
+#bgsecundaria {
+  fill: none;
+}
+
+#bgsecundaria:hover {
+  fill: #36454f;
+}
+
+#bgchaleco {
+  fill: none;
+}
+
+#bgchaleco:hover {
+  fill: #999999;
+}
+
+#bgprimaria {
+  fill: none;
+}
+
+#bgprimaria:hover {
+  fill: #36454f;
+}
+
+#bgmanos {
+  fill: none;
+}
+
+#bgmanos:hover {
+  fill: #dbb18c;
+}

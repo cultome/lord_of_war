@@ -3,6 +3,9 @@ class LordOfWar::Api < Sinatra::Base
     redirect to('/catalog')
   end
 
+  get '/marketplace' do
+  end
+
   get '/profile' do
     erb(
       :profile,
