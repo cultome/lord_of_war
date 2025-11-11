@@ -9,6 +9,10 @@ class LordOfWar::Pagination
     @total_records = 0
   end
 
+  def display?
+    @total_records > @page_size
+  end
+
   def results_range
     os = (@page - 1) * @page_size
 

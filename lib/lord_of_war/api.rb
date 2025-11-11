@@ -140,13 +140,16 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   def category_labels
-    @category_labels = {
-      'replica' => 'Replicas',
-      'accessories' => 'Accesorios',
-      'gear' => 'Equipo Tactico',
-      'consumable' => 'Insumos',
-      'misc' => 'Misc',
-    }
+    @@category_labels ||= begin
+      catalog = store.categories_catalog
+      {
+        catalog['replica'] => 'Replicas',
+        catalog['accessories'] => 'Accesorios',
+        catalog['gear'] => 'Equipo Tactico',
+        catalog['misc'] => 'Insumos',
+        catalog['consumable'] => 'Misc',
+      }
+    end
   end
 
   def users_store; end

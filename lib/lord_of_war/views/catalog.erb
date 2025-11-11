@@ -16,12 +16,12 @@
       <label for="price">Rango de precios</label>
       <div>
         <label for="min-price">desde</label>
-        <input type="number" name="min-price" value="<%= filters.min_price_input %>" placeholder="<%= price_range[:min_placeholder] %>" min="<%= price_range[:min] %>" max="<%= price_range[:max] %>">
+        <input type="number" name="min-price" value="<%= filters.min_price_input %>" placeholder="<%= price_range[:min_placeholder] %>">
       </div>
 
       <div>
         <label for="max-price">hasta</label>
-        <input type="number" name="max-price" value="<%= filters.max_price_input %>" placeholder="<%= price_range[:max_placeholder] %>" min="<%= price_range[:min] %>" max="<%= price_range[:max] %>">
+        <input type="number" name="max-price" value="<%= filters.max_price_input %>" placeholder="<%= price_range[:max_placeholder] %>">
       </div>
     </div>
   </div>
@@ -71,30 +71,32 @@
     <!-- Card end -->
   </div>
 
-  <div class="row pagination">
-    <% if pagination.prev? %>
-      <div class="col">
-        <input type="radio" id="prev" name="page" value="<%= pagination.page - 1 %>" class="hidden" onchange="this.form.submit()">
-        <label for="prev" class="cat-btn">&larr;</label>
-      </div>
-    <% end%>
+  <% if pagination.display? %>
+    <div class="row pagination">
+      <% if pagination.prev? %>
+        <div class="col">
+          <input type="radio" id="prev" name="page" value="<%= pagination.page - 1 %>" class="hidden" onchange="this.form.submit()">
+          <label for="prev" class="cat-btn">&larr;</label>
+        </div>
+      <% end%>
 
-    <% pagination.pages.each do |num, is_active, ellipsis| %>
-      <div class="col">
-        <% if ellipsis %>
-          <div class="ellipsis">...</div>
-        <% else %>
-          <input type="radio" id="p<%= num %>" name="page" value="<%= num %>" class="hidden" onchange="this.form.submit()">
-          <label for="p<%= num %>" class="cat-btn <%= is_active ? 'active' : '' %>"><%= num %></label>
-        <% end %>
-      </div>
-    <% end %>
+      <% pagination.pages.each do |num, is_active, ellipsis| %>
+        <div class="col">
+          <% if ellipsis %>
+            <div class="ellipsis">...</div>
+          <% else %>
+            <input type="radio" id="p<%= num %>" name="page" value="<%= num %>" class="hidden" onchange="this.form.submit()">
+            <label for="p<%= num %>" class="cat-btn <%= is_active ? 'active' : '' %>"><%= num %></label>
+          <% end %>
+        </div>
+      <% end %>
 
-    <% if pagination.next? %>
-      <div class="col">
-        <input type="radio" id="next" name="page" value="<%= pagination.page + 1 %>" class="hidden" onchange="this.form.submit()">
-        <label for="next" class="cat-btn">&rarr;</label>
-      </div>
-    <% end %>
-  </div>
+      <% if pagination.next? %>
+        <div class="col">
+          <input type="radio" id="next" name="page" value="<%= pagination.page + 1 %>" class="hidden" onchange="this.form.submit()">
+          <label for="next" class="cat-btn">&rarr;</label>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 </form>

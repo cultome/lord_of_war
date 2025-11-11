@@ -9,16 +9,17 @@ class LordOfWar::Store::SqliteStore
     params = [filters.min_price, filters.max_price]
     ph_idx = 3
 
-    unless filters.categories_empty?
-      clauses << "p.category_id = $#{ph_idx}"
-      params << filters.category
-      ph_idx += 1
-    end
-
     unless filters.search_empty?
       clauses << "p.search_corpus LIKE $#{ph_idx}"
       params << "%#{filters.search}%"
       ph_idx += 1
+    end
+
+    unless filters.categories_empty?
+      ph = filters.categories.map.with_index { |_, idx| "$#{idx + ph_idx}" }.join(',')
+      clauses << "p.category_id IN (#{ph})"
+      filters.categories.each { |cat| params << cat }
+      ph_idx += filters.categories.size
     end
 
     first_idx, = pagination.results_range
@@ -88,6 +89,10 @@ class LordOfWar::Store::SqliteStore
     @db
       .execute("SELECT p.product_id FROM favs p WHERE p.user_id = $1 AND p.product_id IN (#{ph})", [user_id, *prod_ids])
       .each_with_object({}) { |rec, acc| acc[rec['product_id']] = true }
+  end
+
+  def categories_catalog
+    @db.execute('SELECT id, name FROM categories').each_with_object({}) { |rec, acc| acc[rec['name']] = rec['id'] }
   end
 
   private
