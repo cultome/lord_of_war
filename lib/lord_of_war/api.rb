@@ -1,12 +1,78 @@
 class LordOfWar::Api < Sinatra::Base
+  include BCrypt
+
+  enable :sessions
+
+  set :sessions, :domain => 'localhost'
+  set :session_secret, ENV.fetch('SESSION_SECRET') { SecureRandom.hex(64) }
+
+  NO_AUTH_PATHS= %w[
+    /login
+    /logout
+    /apple-touch-icon.png
+    /favicon-32x32.png
+    /favicon-16x16.png
+    /site.webmanifest
+    /css/
+  ].join('|')
+
   before do
-    @user = LordOfWar::User.new '74604fce-0953-4e87-93e5-e10e2b7389ff', 'cultome'
+    # return if request.path.match? /^(#{NO_AUTH_PATHS})/
+    session[:user_id] = '74604fce-0953-4e87-93e5-e10e2b7389ff'
+
+    if session.key? :user_id
+      @user = store.find_user session[:user_id]
+      @account = LordOfWar::Account.new user: @user
+    else
+      redirect to('/login')
+    end
+  end
+
+  get '/login' do
+    erb :login, layout: :login_layout
+  end
+
+  post '/login' do
+  end
+
+  get '/logout' do
+    session[:user_id] = nil
+    redirect to('/login')
   end
 
   post '/update-account' do
+    if @account.user.username == params['username']
+      partial :account_form, { account: @account, alert_type: 'warning', message: 'Ya tienes este nombre de usuario!' }
+    elsif store.username_exists? params['username']
+      partial :account_form,
+              { account: @account, alert_type: 'danger', message: "El nombre de usuario [#{params["username"]}] no esta disponible" }
+    elsif store.update_username! @account.user.id, params['username']
+      @account.user.username = params['username']
+
+      partial :account_form, { account: @account, alert_type: 'secondary', message: 'Actualizacion exitosa!' }
+    else
+      partial :account_form, { account: @account, alert_type: 'danger', message: 'Sucedio un error al actualizar tu nombre de usuario!' }
+    end
   end
 
   post '/update-password' do
+    locals = { account: @account }
+
+    if BCrypt::Password.new(@account.user.password) == params['cpasswd']
+      if password_complex_enough? params['npasswd']
+        if store.update_password! @account.user.id, BCrypt::Password.create(params['npasswd'])
+          locals.merge! alert_type: 'secondary', message: 'Actualizacion exitosa!'
+        else
+          locals.merge! alert_type: 'danger', message: 'Sucedio un error al actualizar tu contraseña!'
+        end
+      else
+        locals.merge! alert_type: 'danger', message: 'Tu nueva contrasena es muy simple. Agrega mayusculas, numeros y simbolos.'
+      end
+    else
+      locals.merge! alert_type: 'danger', message: 'Tu contraseña actual es incorrecta!'
+    end
+
+    partial :password_form, locals
   end
 
   post '/update-emergency' do
@@ -42,6 +108,7 @@ class LordOfWar::Api < Sinatra::Base
       :profile,
       locals: {
         section_title: 'Mi perfil',
+        account: @account,
       }
     )
   end
@@ -80,6 +147,7 @@ class LordOfWar::Api < Sinatra::Base
         pagination: pagination,
         price_range: price_range,
         section_title: 'Mi Warlist',
+        account: @account,
       }
     )
   end
@@ -119,6 +187,7 @@ class LordOfWar::Api < Sinatra::Base
         price_range: price_range,
         favs: favs,
         section_title: 'Catalogo',
+        account: @account,
       }
     )
   end
@@ -152,7 +221,10 @@ class LordOfWar::Api < Sinatra::Base
     end
   end
 
-  def users_store; end
+  def password_complex_enough?(_value)
+    # TODO: implement
+    true
+  end
 
   def store
     @store ||= LordOfWar::Store::SqliteStore.new 'low.db'

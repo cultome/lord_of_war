@@ -443,3 +443,8 @@ footer a {
   border: none;
   margin-right: 20px;
 }
+
+.logout-btn {
+  margin-top: 40px;
+  text-align: center;
+}

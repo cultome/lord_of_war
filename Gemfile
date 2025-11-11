@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gemspec
 
+gem 'bcrypt', '~> 3.1'
 gem 'irb'
 gem 'pry', '~> 0.15.2'
 gem 'puma', '~> 7.1'

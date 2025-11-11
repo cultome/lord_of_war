@@ -8,6 +8,7 @@ GEM
   specs:
     ast (2.4.3)
     base64 (0.3.0)
+    bcrypt (3.1.20)
     coderay (1.1.3)
     date (3.5.0)
     diff-lcs (1.6.2)
@@ -109,6 +110,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  bcrypt (~> 3.1)
   irb
   lord_of_war!
   pry (~> 0.15.2)

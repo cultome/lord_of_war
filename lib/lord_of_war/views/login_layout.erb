@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lord of War</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="https://unpkg.com/papercss@1.9.2/dist/paper.min.css" />
+    <link href="/css/lord_of_war.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+  </head>
+  <body>
+    <header class="underline container header">
+      <div class="col col-4">
+        <a href="/">
+          <h3>
+            <img src="/img/logo200x200.png">
+            Lord of War
+          </h3>
+        </a>
+      </div>
+    </header>
+
+    <main class="border paper container main">
+      <%= yield %>
+    </main>
+
+    <footer>
+      made with 
+      <svg version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" xml:space="preserve" fill="#FF0000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <style type="text/css">  .st0{fill:#FF0000;}  </style> <g> <path class="st0" d="M509.915,2.067C498.446-9.417,371.29,29.161,331.086,60.974L451.04,180.927 C482.853,140.708,521.415,13.567,509.915,2.067z"></path> <path class="st0" d="M268.743,122.677l-41.344,10.328L42.211,318.208l12.047,12.063l-16.359,16.344l-12.063-12.047L0.008,360.396 l151.594,151.608l25.844-25.844l-12.063-12.063l16.359-16.359l12.063,12.047l185.188-185.171l10.344-41.359 c0,0,18.703-18.719,48.25-48.234L316.993,74.442C287.461,103.942,268.743,122.677,268.743,122.677z"></path> </g> </g></svg>
+        by
+        <a href="#">cultome</a>
+    </footer>
+  </body>
+</html>

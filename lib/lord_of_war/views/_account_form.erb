@@ -1,0 +1,18 @@
+<form>
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <div class="row" style="align-items: center;">
+    <div class="col col-10">
+      <div class="form-group in-tabs">
+        <label for="username">Nombre de usuario</label>
+        <input class="input-block" type="text" id="username" name="username" value="<%= account.user.username %>" />
+      </div>
+    </div>
+
+    <div class="col col-2 in-tabs" style="margin-top: 30px;">
+      <button class="paper-btn btn-block btn-secondary-outline" hx-post="/update-account" hx-target="closest form">Actualizar!</button>
+    </div>
+  </div>
+</form>
