@@ -329,10 +329,11 @@ footer a {
 
 .my-gear {
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
 }
 
 .my-gear svg {
+  height: 100%;
 }
 
 #bgcasco {
@@ -412,4 +413,33 @@ footer a {
 
 #bgmanos:hover {
   fill: #dbb18c;
+}
+
+.in-tabs label {
+  color: #41403e;
+}
+
+.in-tabs input {
+  display: block;
+}
+
+.btn-grp {
+  display: flex;
+  justify-content: space-around;
+}
+
+.team-check {
+  padding: 0 0.75rem !important;
+}
+
+.team-check span {
+  display: flex !important;
+  justify-content: start;
+  align-items: center;
+}
+
+.team-check img {
+  width: 36px;
+  border: none;
+  margin-right: 20px;
 }
