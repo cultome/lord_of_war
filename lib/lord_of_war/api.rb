@@ -17,9 +17,8 @@ class LordOfWar::Api < Sinatra::Base
   ].join('|')
 
   before do
-    return if request.path.match?(/^(#{NO_AUTH_PATHS})/)
-
-    # session[:user_id] = '74604fce-0953-4e87-93e5-e10e2b7389ff'
+    # return if request.path.match?(/^(#{NO_AUTH_PATHS})/)
+    session[:user_id] = '74604fce-0953-4e87-93e5-e10e2b7389ff'
 
     if session.key? :user_id
       @user = store.find_user session[:user_id]

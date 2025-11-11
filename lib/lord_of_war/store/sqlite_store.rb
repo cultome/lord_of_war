@@ -24,9 +24,12 @@ class LordOfWar::Store::SqliteStore
 
     first_idx, = pagination.results_range
 
+    favs_join = "JOIN favs f ON f.product_id = p.id AND f.user_id = '#{filters.user_id}'"
+
     query = <<~SQL
       SELECT p.*
       FROM products p
+      #{favs_join if filters.favs_only?}
       WHERE
       #{clauses.join " AND "}
       LIMIT $#{ph_idx}
