@@ -1,4 +1,8 @@
 class LordOfWar::Api < Sinatra::Base
+  before do
+    @user = LordOfWar::User.new '74604fce-0953-4e87-93e5-e10e2b7389ff', 'cultome'
+  end
+
   post '/update-account' do
   end
 
@@ -44,7 +48,7 @@ class LordOfWar::Api < Sinatra::Base
 
   get '/favs' do
     filters = LordOfWar::Filters.new(
-      username: 'username',
+      user_id: @user.id,
       search: params['search'],
       categories: params['categories'],
       min_price: params['min-price'],
@@ -54,7 +58,7 @@ class LordOfWar::Api < Sinatra::Base
 
     pagination = LordOfWar::Pagination.new params['page']
 
-    products = products_store.get_products filters, pagination
+    products = store.get_products filters, pagination
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -82,7 +86,7 @@ class LordOfWar::Api < Sinatra::Base
 
   get '/catalog' do
     filters = LordOfWar::Filters.new(
-      username: 'username',
+      user_id: @user.id,
       search: params['search'],
       categories: params['categories'],
       min_price: params['min-price'],
@@ -91,8 +95,8 @@ class LordOfWar::Api < Sinatra::Base
 
     pagination = LordOfWar::Pagination.new params['page']
 
-    products = products_store.get_products filters, pagination
-    favs = products_store.filter_by_favs products, 'username'
+    products = store.get_products filters, pagination
+    favs = store.filter_by_favs products, @user.id
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -120,14 +124,14 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   post '/fav-remove/:id' do
-    product = products_store.find_product params[:id]
-    products_store.remove_fav product.id, 'username'
+    product = store.find_product params[:id]
+    store.remove_fav product.id, @user.id
     '' # remove element
   end
 
   post '/fav-toggle/:id' do
-    product = products_store.find_product params[:id]
-    new_state_is_active = products_store.toggle_fav product.id, 'username'
+    product = store.find_product params[:id]
+    new_state_is_active = store.toggle_fav product.id, @user.id
     partial :fav_button, product: product, is_active: new_state_is_active
   end
 
@@ -147,18 +151,8 @@ class LordOfWar::Api < Sinatra::Base
 
   def users_store; end
 
-  def products_store
-    @products_store ||= LordOfWar::Store::JsonStore.new(
-      'data/vetaairsoft/products_clean.json'
-      # 'data/aire_suave_data/aire_suave_accesorios.json',
-      # 'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
-      # 'data/aire_suave_data/aire_suave_bbs_y_gas.json',
-      # 'data/aire_suave_data/aire_suave_clean.json',
-      # 'data/aire_suave_data/aire_suave_equipo_tactico.json',
-      # 'data/aire_suave_data/aire_suave_ofertas.json',
-      # 'data/aire_suave_data/aire_suave_replicas.json',
-      # 'data/aire_suave_data/aire_suave_sin_categorizar.json'
-    )
+  def store
+    @store ||= LordOfWar::Store::SqliteStore.new 'low.db'
   end
 
   helpers do

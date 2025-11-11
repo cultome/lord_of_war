@@ -1,8 +1,8 @@
 class LordOfWar::Filters
-  attr_reader :username, :search, :categories, :min_price, :max_price, :favs_only
+  attr_reader :user_id, :search, :categories, :min_price, :max_price, :favs_only
 
-  def initialize(username:, search:, categories:, min_price:, max_price:, favs_only: false)
-    @username = username
+  def initialize(user_id:, search:, categories:, min_price:, max_price:, favs_only: false)
+    @user_id = user_id
     @search = search
     @categories = categories.blank? ? [] : categories
     @min_price = min_price.blank? ? 0 : min_price.to_i

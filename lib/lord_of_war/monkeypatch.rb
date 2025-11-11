@@ -1,3 +1,9 @@
+class Numeric
+  def blank?
+    false
+  end
+end
+
 class String
   def blank?
     empty?

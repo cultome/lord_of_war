@@ -1,5 +1,15 @@
 PRAGMA foreign_keys = ON;
 
+-- Users
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL
+);
+
+-- Products
+
 CREATE TABLE IF NOT EXISTS batteries (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE
@@ -164,4 +174,13 @@ CREATE TABLE IF NOT EXISTS products_types (
   type_id TEXT NOT NULL,
   FOREIGN KEY (product_id) REFERENCES products(id)
   FOREIGN KEY (type_id) REFERENCES types(id)
+);
+
+-- Favs
+
+CREATE TABLE IF NOT EXISTS favs (
+  product_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  FOREIGN KEY (product_id) REFERENCES products(id)
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );

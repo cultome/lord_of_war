@@ -46,13 +46,13 @@ class LordOfWar::Product
   def price_amount
     return nil if @props['price'].blank?
 
-    @props.dig 'price', 'amount'
+    @props.dig 'price'
   end
 
   def price
     return nil if @props['price'].blank?
 
-    "$#{@props.dig "price", "amount"} #{@props.dig "price", "currency"}"
+    "$#{@props["price"]} MXN"
   end
 
   def fps_range
@@ -83,5 +83,29 @@ class LordOfWar::Product
     val = @props.fetch('maker', []).join ', '
 
     val.empty? ? nil : val
+  end
+
+  def batteries=(value)
+    @props['battery'] = value
+  end
+
+  def firing_modes=(value)
+    @props['firing_mode'] = value
+  end
+
+  def imgs=(value)
+    @props['img'] = value
+  end
+
+  def licenses=(value)
+    @props['license'] = value
+  end
+
+  def makers=(value)
+    @props['maker'] = value
+  end
+
+  def types=(value)
+    @props['type'] = value
   end
 end

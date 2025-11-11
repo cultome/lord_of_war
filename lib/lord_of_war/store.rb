@@ -1,4 +1,4 @@
 module LordOfWar::Store
 end
 
-require_relative 'store/json_store'
+require_relative 'store/sqlite_store'
