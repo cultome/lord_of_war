@@ -1,2 +1,2 @@
-INSERT INTO users(id, username, password) VALUES('74604fce-0953-4e87-93e5-e10e2b7389ff', 'cultome', '$2a$12$FXYZBBXgE5cvvsF.ia9t0.hPiyE/E/myy4vqNvWbE7ka4v6ZuI37.');
+INSERT INTO users(id, email, username, password) VALUES('74604fce-0953-4e87-93e5-e10e2b7389ff', 'csoria@cultome.io', 'cultome', '$2a$12$FXYZBBXgE5cvvsF.ia9t0.hPiyE/E/myy4vqNvWbE7ka4v6ZuI37.');
 INSERT INTO categories(id, name) VALUES ('ad8e702f-4a61-4de6-9d3c-bde63942b6bb','misc'), ('280dd95b-e8b8-439b-804f-5873b8cb7528','gear'), ('b225470d-8022-4df4-b4a6-ad7551d3ee4e','accessories'), ('a2bcc5cb-e913-4506-99a1-c1d996532e3a','unknown'), ('b0a54ddc-1c21-4b46-bc38-5f4b2d749f87','consumable'), ('b0dddc66-4c0e-4fcc-b72a-75aaefc540ae','replica');

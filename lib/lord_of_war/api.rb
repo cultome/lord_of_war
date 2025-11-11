@@ -3,10 +3,10 @@ class LordOfWar::Api < Sinatra::Base
 
   enable :sessions
 
-  set :sessions, :domain => 'localhost'
+  set :sessions, domain: 'localhost'
   set :session_secret, ENV.fetch('SESSION_SECRET') { SecureRandom.hex(64) }
 
-  NO_AUTH_PATHS= %w[
+  NO_AUTH_PATHS = %w[
     /login
     /logout
     /apple-touch-icon.png
@@ -17,8 +17,9 @@ class LordOfWar::Api < Sinatra::Base
   ].join('|')
 
   before do
-    # return if request.path.match? /^(#{NO_AUTH_PATHS})/
-    session[:user_id] = '74604fce-0953-4e87-93e5-e10e2b7389ff'
+    return if request.path.match?(/^(#{NO_AUTH_PATHS})/)
+
+    # session[:user_id] = '74604fce-0953-4e87-93e5-e10e2b7389ff'
 
     if session.key? :user_id
       @user = store.find_user session[:user_id]
@@ -29,14 +30,35 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   get '/login' do
-    erb :login, layout: :login_layout
+    if session.key? :user_id
+      redirect to('/')
+    else
+      erb :login, layout: :login_layout
+    end
   end
 
   post '/login' do
+    user = store.find_user_by_email params['email']
+
+    if user.nil?
+      puts "[-] User [#{params["email"]}] doesnt exists!"
+      partial :login_form, alert_type: 'danger', message: 'Credenciales invalidas!'
+    elsif BCrypt::Password.new(user.password) != params['password']
+      puts "[-] Password for [#{params["email"]}] is incorrect!"
+      partial :login_form, alert_type: 'danger', message: 'Credenciales invalidas!'
+    else
+      puts "[-] Login successful for [#{params["email"]}]!"
+
+      session[:user_id] = user.id
+      response.headers['HX-Redirect'] = '/'
+
+      partial :login_form, alert_type: 'seconday', message: 'Validacion exitosa!'
+    end
   end
 
   get '/logout' do
     session[:user_id] = nil
+
     redirect to('/login')
   end
 

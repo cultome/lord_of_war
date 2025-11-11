@@ -102,6 +102,13 @@ class LordOfWar::Store::SqliteStore
       .first
   end
 
+  def find_user_by_email(email)
+    @db
+      .execute('SELECT * FROM users where email = $1', [email])
+      .map { |rec| LordOfWar::User.parse_json rec }
+      .first
+  end
+
   def username_exists?(username)
     @db
       .execute('SELECT id FROM users where username like $1', [username])

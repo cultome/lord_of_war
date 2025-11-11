@@ -1,0 +1,19 @@
+<form>
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <div class="form-group">
+    <input type="text" placeholder="Correo electronico" name="email">
+  </div>
+
+  <div class="form-group">
+    <input type="password" placeholder="Contraseña" name="password">
+  </div>
+
+  <div class="form-group">
+    <button type="submit" class="btn-secondary-outline btn-block" hx-post="/login" hx-target="closest form">
+      Ingresa!
+    </button>
+  </div>
+</form>
