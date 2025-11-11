@@ -1,4 +1,4 @@
-<form>
+<form hx-post="/update-account">
   <% if defined?(alert_type) %>
     <div class="alert alert-<%= alert_type %>"><%= message %></div>
   <% end %>
@@ -12,7 +12,7 @@
     </div>
 
     <div class="col col-2 in-tabs" style="margin-top: 30px;">
-      <button class="paper-btn btn-block btn-secondary-outline" hx-post="/update-account" hx-target="closest form">Actualizar!</button>
+      <button type="submit" class="paper-btn btn-block btn-secondary-outline">Actualizar!</button>
     </div>
   </div>
 </form>
