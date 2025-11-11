@@ -1,4 +1,31 @@
 module LordOfWar::Utils
+  def fetch_or_create(table, value, db)
+    return nil if value.blank?
+
+    existing = db
+               .execute("SELECT id FROM #{table} WHERE name = $1 LIMIT 1", [value])
+               .map { |row| row['id'] }
+               .first
+
+    return existing unless existing.nil?
+
+    db
+      .execute("INSERT INTO #{table}(id, name) VALUES ($1, $2) RETURNING id", [SecureRandom.uuid, value])
+      .map { |row| row['id'] }
+      .first
+  end
+
+  def create_product_relation_if_required(table, column, product_id, other_id, db)
+    existing = db
+               .execute("SELECT product_id FROM #{table} WHERE product_id = $1 AND #{column} = $2 LIMIT 1", [product_id, other_id])
+               .map { |row| row['product_id'] }
+               .first
+
+    return unless existing.nil?
+
+    db.execute "INSERT INTO #{table}(product_id, #{column}) VALUES ($1, $2)", [product_id, other_id]
+  end
+
   def audit_props(data_folder, products)
     puts '[*] Generating audit for properties'
 

@@ -6,11 +6,13 @@ require 'brotli'
 require 'csv'
 require 'httparty'
 require 'json'
+require 'lord_of_war'
 require 'nokogiri'
 require 'pry'
+require 'securerandom'
 require 'set'
+require 'sqlite3'
 require 'thor'
-require 'lord_of_war'
 
 class VetaAirsoft < Thor
   include LordOfWar::Utils
@@ -37,6 +39,140 @@ class VetaAirsoft < Thor
   ]
 
   STAGES = %w[urls details clean audit]
+
+  desc 'upload FILE', 'Load data in DB'
+  def upload(file)
+    records = JSON.parse File.read(file)
+
+    db = SQLite3::Database.new 'low.db'
+    db.results_as_hash = true
+
+    ins_products_sql = <<~SQL
+      INSERT INTO products(id, search_corpus, title, url, description, price, capacity_id, category_id, fps_range_id, gearbox_id, hop_up_id, inner_barrel_id, magazine_id, motor_id, outer_barrel_id, speed_id, system_id, thread_direction_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      RETURNING id
+    SQL
+
+    upd_products_sql = <<~SQL
+      UPDATE products SET
+      search_corpus = $2, title = $3, url = $4, description = $5, price = $6, capacity_id = $7, category_id = $8,#{" "}
+      fps_range_id = $9, gearbox_id = $10, hop_up_id = $11, inner_barrel_id = $12, magazine_id = $13, motor_id = $14,#{" "}
+      outer_barrel_id = $15, speed_id = $16, system_id = $17, thread_direction_id = $18
+      WHERE id = $1
+      RETURNING id
+    SQL
+
+    count = 0
+    records.each do |rec|
+      count += 1
+      print "  #{count} / #{records.size} ...      \r"
+
+      capacity_id = fetch_or_create 'capacities', rec['capacity'], db
+      category_id = fetch_or_create 'categories', rec['category'], db
+      fps_range_id = fetch_or_create 'fps_ranges', rec['fps_range'], db
+      gearbox_id = fetch_or_create 'gearboxes', rec['gearbox'], db
+      hop_up_id = fetch_or_create 'hop_ups', rec['hop_up'], db
+      inner_barrel_id = fetch_or_create 'inner_barrels', rec['inner_barrel'], db
+      magazine_id = fetch_or_create 'magazines', rec['magazine'], db
+      motor_id = fetch_or_create 'motors', rec['motor'], db
+      outer_barrel_id = fetch_or_create 'outer_barrels', rec['outer_barrel'], db
+      speed_id = fetch_or_create 'speeds', rec['speed'], db
+      system_id = fetch_or_create 'systems', rec['system'], db
+      thread_direction_id = fetch_or_create 'thread_directions', rec['thread_direction'], db
+
+      is_new_product = db
+                       .execute('SELECT id FROM products WHERE id = $1', [rec['id']])
+                       .map { |p| p['id'] }
+                       .first
+                       .nil?
+
+      product_id = if is_new_product
+                     db.execute(
+                       ins_products_sql,
+                       [
+                         rec['id'],
+                         rec['search_corpus'],
+                         rec['title'],
+                         rec['url'],
+                         rec['description'],
+                         rec.dig('price', 'amount'),
+                         capacity_id,
+                         category_id,
+                         fps_range_id,
+                         gearbox_id,
+                         hop_up_id,
+                         inner_barrel_id,
+                         magazine_id,
+                         motor_id,
+                         outer_barrel_id,
+                         speed_id,
+                         system_id,
+                         thread_direction_id,
+                       ]
+                     ).map { |row| row['id'] }.first
+                   else
+                     db.execute(
+                       upd_products_sql,
+                       [
+                         rec['id'],
+                         rec['search_corpus'],
+                         rec['title'],
+                         rec['url'],
+                         rec['description'],
+                         rec.dig('price', 'amount'),
+                         capacity_id,
+                         category_id,
+                         fps_range_id,
+                         gearbox_id,
+                         hop_up_id,
+                         inner_barrel_id,
+                         magazine_id,
+                         motor_id,
+                         outer_barrel_id,
+                         speed_id,
+                         system_id,
+                         thread_direction_id,
+                       ]
+                     ).map { |row| row['id'] }.first
+                   end
+
+      (rec['battery'] || []).each do |val|
+        val['capacity'].product(val['type']).each do |cap, tp|
+          calc_val = "#{cap} #{tp}"
+
+          battery_id = fetch_or_create 'batteries', calc_val, db
+          create_product_relation_if_required 'products_batteries', 'battery_id', product_id, battery_id, db
+        end
+      end
+
+      (rec['firing_mode'] || []).each do |val|
+        firing_mode_id = fetch_or_create 'firing_modes', val, db
+        create_product_relation_if_required 'products_firing_modes', 'firing_mode_id', product_id, firing_mode_id, db
+      end
+
+      (rec['img'] || []).each do |val|
+        img_id = fetch_or_create 'imgs', val, db
+        create_product_relation_if_required 'products_imgs', 'img_id', product_id, img_id, db
+      end
+
+      (rec['license'] || []).each do |val|
+        license_id = fetch_or_create 'licenses', val, db
+        create_product_relation_if_required 'products_licenses', 'license_id', product_id, license_id, db
+      end
+
+      (rec['maker'] || []).each do |val|
+        maker_id = fetch_or_create 'makers', val, db
+        create_product_relation_if_required 'products_makers', 'maker_id', product_id, maker_id, db
+      end
+
+      (rec['type'] || []).each do |val|
+        type_id = fetch_or_create 'types', val, db
+        create_product_relation_if_required 'products_types', 'type_id', product_id, type_id, db
+      end
+    rescue StandardError => e
+      binding.pry
+    end
+  end
 
   desc 'scrap', 'Scrap site'
   option :from, type: :string, default: 'urls', desc: "Start scraping from a given stage. Valid options: #{STAGES.join ", "}"
@@ -138,6 +274,9 @@ class VetaAirsoft < Thor
             acc2[key] = cval
           when 'type'
             cval = clean_type value
+            acc2[key].concat cval
+          when 'firing_mode'
+            cval = clean_firing_mode value
             acc2[key].concat cval
           when 'url'
             acc2[key] = value
@@ -459,6 +598,23 @@ class VetaAirsoft < Thor
 
     def clean_type(value)
       [value]
+    end
+
+    def clean_fire_rate(value)
+      return [] if value.blank?
+
+      value.split(',').map(&:strip)
+    end
+
+    def clean_firing_mode(value)
+      return [] if value.blank?
+
+      res = []
+      res << 'safety' if value.match?(/seguridad/i)
+      res << 'semi' if value.match?(/semi/i)
+      res << 'full' if value.match?(/(full|complet)/i)
+
+      res
     end
   end
 end

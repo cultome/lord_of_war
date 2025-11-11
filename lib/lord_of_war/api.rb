@@ -1,4 +1,16 @@
 class LordOfWar::Api < Sinatra::Base
+  post '/update-account' do
+  end
+
+  post '/update-password' do
+  end
+
+  post '/update-emergency' do
+  end
+
+  post '/update-teams' do
+  end
+
   get '/' do
     redirect to('/catalog')
   end
@@ -42,7 +54,7 @@ class LordOfWar::Api < Sinatra::Base
 
     pagination = LordOfWar::Pagination.new params['page']
 
-    products = store.get_products filters, pagination
+    products = products_store.get_products filters, pagination
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -79,8 +91,8 @@ class LordOfWar::Api < Sinatra::Base
 
     pagination = LordOfWar::Pagination.new params['page']
 
-    products = store.get_products filters, pagination
-    favs = store.filter_by_favs products, 'username'
+    products = products_store.get_products filters, pagination
+    favs = products_store.filter_by_favs products, 'username'
 
     prices = products.map(&:price_amount).select(&:positive?)
     price_min = prices.min
@@ -108,14 +120,14 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   post '/fav-remove/:id' do
-    product = store.find_product params[:id]
-    store.remove_fav product.id, 'username'
+    product = products_store.find_product params[:id]
+    products_store.remove_fav product.id, 'username'
     '' # remove element
   end
 
   post '/fav-toggle/:id' do
-    product = store.find_product params[:id]
-    new_state_is_active = store.toggle_fav product.id, 'username'
+    product = products_store.find_product params[:id]
+    new_state_is_active = products_store.toggle_fav product.id, 'username'
     partial :fav_button, product: product, is_active: new_state_is_active
   end
 
@@ -133,8 +145,10 @@ class LordOfWar::Api < Sinatra::Base
     }
   end
 
-  def store
-    @store ||= LordOfWar::Store::JsonStore.new(
+  def users_store; end
+
+  def products_store
+    @products_store ||= LordOfWar::Store::JsonStore.new(
       'data/vetaairsoft/products_clean.json'
       # 'data/aire_suave_data/aire_suave_accesorios.json',
       # 'data/aire_suave_data/aire_suave_baterias_y_cargadores.json',
