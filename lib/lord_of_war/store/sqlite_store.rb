@@ -46,7 +46,13 @@ class LordOfWar::Store::SqliteStore
       load_relations prods
 
       # calculate pagination
-      query = "SELECT count(*) as total FROM products p WHERE #{clauses.join " AND "}"
+      query = <<~SQL
+        SELECT count(*) as total
+        FROM products p
+        #{favs_join if filters.favs_only?}
+        WHERE
+        #{clauses.join " AND "}
+      SQL
       total_results = @db.execute(query, params).map { |rec| rec['total'] }.first
 
       pagination.total_records = total_results
@@ -69,14 +75,18 @@ class LordOfWar::Store::SqliteStore
                       .first
 
     if existing_record.nil?
+      puts "[+] Inserting fav [#{product_id}] for [#{user_id}]..."
       @db.execute 'INSERT INTO favs(product_id, user_id) VALUES ($1, $2)', [product_id, user_id]
+      true
     else
       remove_fav product_id, user_id
+      false
     end
   end
 
   def remove_fav(product_id, user_id)
-    @db.execute 'DELETE FROM favs WHERE product_id = $1 AND user_id = $2)', [product_id, user_id]
+    puts "[+] Removing fav [#{product_id}] for [#{user_id}]..."
+    @db.execute 'DELETE FROM favs WHERE product_id = $1 AND user_id = $2', [product_id, user_id]
   end
 
   def get_favs(user_id)

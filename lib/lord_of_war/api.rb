@@ -167,7 +167,7 @@ class LordOfWar::Api < Sinatra::Base
         filters: filters,
         pagination: pagination,
         price_range: price_range,
-        section_title: 'Mi Warlist',
+        section_title: 'Mi Favs',
         account: @account,
       }
     )
@@ -222,7 +222,7 @@ class LordOfWar::Api < Sinatra::Base
   post '/fav-toggle/:id' do
     product = store.find_product params[:id]
     new_state_is_active = store.toggle_fav product.id, @user.id
-    partial :fav_button, product: product, is_active: new_state_is_active
+    partial :fav_button, product: product, was_removed: !new_state_is_active, is_active: new_state_is_active
   end
 
   def to_money_format(value)

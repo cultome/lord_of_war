@@ -201,13 +201,15 @@ footer a {
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
-  border: none;
   background: none;
   padding: 0;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .img-action-btn:hover {
   box-shadow: none;
+  border: none;
 }
 
 .img-action-btn svg {
@@ -215,22 +217,52 @@ footer a {
   height: 24px;
 }
 
+@keyframes inflate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes deflate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .fav-btn svg {
+  /* transition: all ease-in 0.3s; */
+  transform: scale(1);
   stroke: var(--danger);
   stroke-width: 4px;
   fill: rgba(0, 0, 0, 0);
 }
 
+.fav-btn.removed svg {
+  fill: none;
+  animation: deflate 0.6s ease-in-out forwards;
+}
+
 .fav-btn.active svg {
   fill: var(--danger);
+  animation: inflate 0.6s ease-in-out forwards;
 }
 
 .fav-btn svg:hover {
-  fill: var(--danger);
 }
 
 .fav-btn.active svg:hover {
-  fill: none;
 }
 
 .trash-btn svg {
