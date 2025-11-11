@@ -4,6 +4,21 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   get '/marketplace' do
+    erb(
+      :marketplace,
+      locals: {
+        section_title: 'Mercado de armas',
+      }
+    )
+  end
+
+  get '/events' do
+    erb(
+      :events,
+      locals: {
+        section_title: 'Eventos de la comunidad',
+      }
+    )
   end
 
   get '/profile' do
