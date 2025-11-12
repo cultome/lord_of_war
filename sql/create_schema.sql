@@ -185,3 +185,17 @@ CREATE TABLE IF NOT EXISTS favs (
   FOREIGN KEY (product_id) REFERENCES products(id)
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Events
+
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  place_name TEXT,
+  place_url TEXT,
+  datetime DATETIME NOT NULL,
+  desc BLOB,
+  created_by TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (created_by ) REFERENCES users(id)
+);

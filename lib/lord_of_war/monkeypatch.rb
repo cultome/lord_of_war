@@ -1,3 +1,13 @@
+class Time
+  def present?
+    !blank?
+  end
+
+  def blank?
+    false
+  end
+end
+
 class Numeric
   def present?
     !blank?

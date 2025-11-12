@@ -523,6 +523,11 @@ footer a {
   gap: 10px; /* opcional, separa las columnas */
 }
 
+label.paper-btn {
+  padding: 5px 10px;
+  text-align: center;
+}
+
 .calendar button,
 .calendar div {
   padding: 5px 10px;
@@ -544,10 +549,12 @@ footer a {
 .calendar h4 {
   display: flex;
   justify-content: space-evenly;
+  align-items: center;
   margin-bottom: 20px;
 }
 
 .calendar a.month-btn {
+  padding: 10px;
   text-decoration: none;
   background: none;
   color: var(--primary);
