@@ -1,1 +1,48 @@
-<h1>Marketplace</h1>
+<%= partial :filters_form, url: '/marketplace', filters: filters, price_range: price_range, categories: categories %>
+
+<div class="row">
+  <% if products.empty? %>
+    <div class="col-12 no-results">No hay resultados para tus criterios</div>
+  <% end %>
+
+  <!-- Card begin -->
+  <% products.each do |product| %>
+    <div class="col col-3 border card">
+      <div class="img-wrapper">
+        <img class="product-img" src="<%= product.list_img %>" />
+        <%= partial :fav_button, product: product, is_active: favs.key?(product.id) %>
+      </div>
+
+      <div class="card-body">
+        <a class="card-link" href="<%= product.url %>" target="_blank">
+          <div class="card-title"><%= product.title %></div>
+        </a>
+
+        <% if product.specs? %>
+          <div class="card-text specs text-secondary">
+            <% product.specs.each do |prop, value| %>
+              <div class="spec-value" title="<%= prop %>">
+                <%= value %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if product.tags? %>
+          <div>
+            <% product.tags do |tag| %>
+              <div>tag</div>
+            <% end %>
+          </div>
+        <% end%>
+
+        <div class="text-danger">
+          <%= product.price %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  <!-- Card end -->
+</div>
+
+<%= partial :pagination, pagination: pagination %>

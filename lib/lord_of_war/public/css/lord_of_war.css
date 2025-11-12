@@ -516,3 +516,53 @@ footer a {
   margin-top: 40px;
   text-align: center;
 }
+
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px; /* opcional, separa las columnas */
+}
+
+.calendar button,
+.calendar div {
+  padding: 5px 10px;
+}
+
+.calendar div.wday {
+  border: none;
+}
+
+.calendar button.event {
+  display: flex;
+  justify-content: space-between;
+}
+
+.calendar div.skip {
+  border: none;
+}
+
+.calendar h4 {
+  display: flex;
+  justify-content: space-evenly;
+  margin-bottom: 20px;
+}
+
+.calendar a.month-btn {
+  text-decoration: none;
+  background: none;
+  color: var(--primary);
+}
+
+.badge.circular {
+  border-radius: 50%;
+}
+
+.event-list {
+  margin-top: 40px;
+}
+
+.event-list .event {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0px;
+}

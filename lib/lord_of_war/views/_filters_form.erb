@@ -1,0 +1,28 @@
+<form action="<%= url %>" method="GET">
+  <div class="row">
+    <div class="col-12 search-bar">
+      <input type="search" name="search" value="<%= filters.search_input %>" placeholder="Buscar por modelo, fabricante, licencia, descipcion..." />
+      <button>Buscar</button>
+    </div>
+
+    <div class="col-12 category-filters">
+      <% categories.each do |key, label| %>
+        <input type="checkbox" id="<%= key %>" name="categories[]" value="<%= key %>" class="hidden" <%= filters.category?(key) ? 'checked' : '' %> onchange="this.form.submit()">
+        <label for="<%= key %>" class="cat-btn"><%= label %></label>
+      <% end %>
+    </div>
+
+    <div class="col-12 price-filter">
+      <label for="price">Rango de precios</label>
+      <div>
+        <label for="min-price">desde</label>
+        <input type="number" name="min-price" value="<%= filters.min_price_input %>" placeholder="<%= price_range[:min_placeholder] %>">
+      </div>
+
+      <div>
+        <label for="max-price">hasta</label>
+        <input type="number" name="max-price" value="<%= filters.max_price_input %>" placeholder="<%= price_range[:max_placeholder] %>">
+      </div>
+    </div>
+  </div>
+</form>

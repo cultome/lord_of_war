@@ -107,10 +107,40 @@ class LordOfWar::Api < Sinatra::Base
   end
 
   get '/marketplace' do
+    filters = LordOfWar::Filters.new(
+      user_id: @user.id,
+      search: params['search'],
+      categories: params['categories'],
+      min_price: params['min-price'],
+      max_price: params['max-price'],
+      favs_only: true
+    )
+
+    pagination = LordOfWar::Pagination.new params['page']
+
+    products = []
+
+    prices = products.map(&:price_amount).select(&:positive?)
+    price_min = prices.min
+    price_max = prices.max
+
+    price_range = {
+      min: price_min,
+      min_placeholder: "$#{to_money_format price_min}",
+      max: price_max,
+      max_placeholder: "$#{to_money_format price_max}",
+    }
+
     erb(
       :marketplace,
       locals: {
         section_title: 'Mercado de armas',
+        account: @account,
+        products: products,
+        categories: category_labels,
+        filters: filters,
+        pagination: pagination,
+        price_range: price_range,
       }
     )
   end
@@ -120,6 +150,7 @@ class LordOfWar::Api < Sinatra::Base
       :events,
       locals: {
         section_title: 'Eventos de la comunidad',
+        account: @account,
       }
     )
   end

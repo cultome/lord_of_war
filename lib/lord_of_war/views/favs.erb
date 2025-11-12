@@ -1,75 +1,48 @@
-<form action="/favs" method="GET">
-  <div class="row">
-    <div class="col-12 search-bar">
-      <input type="search" name="search" value="<%= filters.search_input %>" placeholder="Buscar por modelo, fabricante, licencia, descipcion..." />
-      <button>Buscar</button>
-    </div>
+<%= partial :filters_form, url: '/favs', filters: filters, price_range: price_range, categories: categories %>
 
-    <div class="col-12 category-filters">
-      <% categories.each do |key, label| %>
-        <input type="checkbox" id="<%= key %>" name="categories[]" value="<%= key %>" class="hidden" <%= filters.category?(key) ? 'checked' : '' %> onchange="this.form.submit()">
-        <label for="<%= key %>" class="cat-btn"><%= label %></label>
-      <% end %>
-    </div>
+<div class="row">
+  <% if products.empty? %>
+    <div class="col-12 no-results">No hay resultados para tus criterios</div>
+  <% end %>
 
-    <div class="col-12 price-filter">
-      <label for="price">Rango de precios</label>
-      <div>
-        <label for="min-price">desde</label>
-        <input type="number" name="min-price" value="<%= filters.min_price_input %>" placeholder="<%= price_range[:min_placeholder] %>">
+  <!-- Card begin -->
+  <% products.each do |product| %>
+    <div class="col col-3 border card" id="card<%= product.id %>">
+      <div class="img-wrapper">
+        <img class="product-img" src="<%= product.list_img %>" />
+        <%= partial :trash_button, product: product, is_active: true %>
       </div>
 
-      <div>
-        <label for="max-price">hasta</label>
-        <input type="number" name="max-price" value="<%= filters.max_price_input %>" placeholder="<%= price_range[:max_placeholder] %>">
-      </div>
-    </div>
-  </div>
+      <div class="card-body">
+        <a class="card-link" href="<%= product.url %>" target="_blank">
+          <div class="card-title"><%= product.title %></div>
+        </a>
 
-  <div class="row">
-    <% if products.empty? %>
-      <div class="col-12 no-results">No hay resultados para tus criterios</div>
-    <% end %>
-
-    <!-- Card begin -->
-    <% products.each do |product| %>
-      <div class="col col-3 border card" id="card<%= product.id %>">
-        <div class="img-wrapper">
-          <img class="product-img" src="<%= product.list_img %>" />
-          <%= partial :trash_button, product: product, is_active: true %>
-        </div>
-
-        <div class="card-body">
-          <a class="card-link" href="<%= product.url %>" target="_blank">
-            <div class="card-title"><%= product.title %></div>
-          </a>
-
-          <% if product.specs? %>
-            <div class="card-text specs">
-              <% product.specs.each do |prop, value| %>
-                <div class="spec-item">
-                  <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <% if product.tags? %>
-            <div>
-              <% product.tags do |tag| %>
-                <div>tag</div>
-              <% end %>
-            </div>
-          <% end%>
-
-          <div class="text-danger">
-            <%= product.price %>
+        <% if product.specs? %>
+          <div class="card-text specs">
+            <% product.specs.each do |prop, value| %>
+              <div class="spec-item">
+                <span class="spec-name"><%= prop %></span>: <span class="spec-value"><%= value %></span>
+              </div>
+            <% end %>
           </div>
+        <% end %>
+
+        <% if product.tags? %>
+          <div>
+            <% product.tags do |tag| %>
+              <div>tag</div>
+            <% end %>
+          </div>
+        <% end%>
+
+        <div class="text-danger">
+          <%= product.price %>
         </div>
       </div>
-    <% end %>
-    <!-- Card end -->
-  </div>
+    </div>
+  <% end %>
+  <!-- Card end -->
+</div>
 
-  <%= partial :pagination, pagination: pagination %>
-</form>
+<%= partial :pagination, pagination: pagination %>
