@@ -106,21 +106,32 @@ class LordOfWar::Api < Sinatra::Base
     redirect to('/catalog')
   end
 
+  get '/marketplace/:id' do
+    listing = store.find_listing params[:id]
+
+    erb(
+      :listing,
+      layout: false,
+      locals: {
+        listing: listing,
+      }
+    )
+  end
+
   get '/marketplace' do
     filters = LordOfWar::Filters.new(
       user_id: @user.id,
       search: params['search'],
       categories: params['categories'],
       min_price: params['min-price'],
-      max_price: params['max-price'],
-      favs_only: true
+      max_price: params['max-price']
     )
 
     pagination = LordOfWar::Pagination.new params['page']
 
-    products = []
+    listings = store.get_listings filters, pagination
 
-    prices = products.map(&:price_amount).select(&:positive?)
+    prices = listings.map(&:price_amount).select(&:positive?)
     price_min = prices.min
     price_max = prices.max
 
@@ -136,7 +147,7 @@ class LordOfWar::Api < Sinatra::Base
       locals: {
         section_title: 'Bazar de guerra',
         account: @account,
-        products: products,
+        listings: listings,
         categories: category_labels,
         filters: filters,
         pagination: pagination,

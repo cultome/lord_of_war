@@ -1,0 +1,3 @@
+INSERT INTO listings(id, title, description, price, search_corpus, category_id) VALUES('0f4d368e-3d23-496e-b10f-355e06c89f91', 'Replica de escopeta de Terminator 2', 'Replica Golden Eagle M1873 con accion de Pump y 5 shells', 3500, 'Replica de escopeta de Terminator 2 Replica Golden Eagle M1873 con accion de Pump y 5 shells', 'b0dddc66-4c0e-4fcc-b72a-75aaefc540ae') RETURNING id;
+INSERT INTO imgs(id, name) VALUES('dfe35317-8bb3-401f-a2ea-6aae2d7014d7', 'https://airsoftzone.com.mx/wp-content/uploads/COBALT1-jpg-2-400x158.jpg');
+INSERT INTO listings_imgs(img_id, listing_id) VALUES ('dfe35317-8bb3-401f-a2ea-6aae2d7014d7', '0f4d368e-3d23-496e-b10f-355e06c89f91');

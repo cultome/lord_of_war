@@ -38,6 +38,81 @@ class LordOfWar::Store::SqliteStore
     @db.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Event.parse_json rec }
   end
 
+  def find_listing(id)
+    query = <<~SQL
+      SELECT
+        l.*,
+        c.name AS category
+      FROM listings l
+      JOIN categories c ON c.id = l.category_id
+      WHERE l.id = $1
+    SQL
+
+    listings = @db
+               .execute(query, [id])
+               .map { |rec| LordOfWar::Listing.parse_json rec }
+
+    load_listing_relations listings
+
+    listings.first
+  end
+
+  def get_listings(filters, pagination)
+    clauses = ['l.price >= $1', 'l.price <= $2']
+    params = [filters.min_price, filters.max_price]
+    ph_idx = 3
+
+    unless filters.search_empty?
+      clauses << "l.search_corpus LIKE $#{ph_idx}"
+      params << "%#{filters.search}%"
+      ph_idx += 1
+    end
+
+    unless filters.categories_empty?
+      ph = filters.categories.map.with_index { |_, idx| "$#{idx + ph_idx}" }.join(',')
+      clauses << "l.category_id IN (#{ph})"
+      filters.categories.each { |cat| params << cat }
+      ph_idx += filters.categories.size
+    end
+
+    first_idx, = pagination.results_range
+
+    query = <<~SQL
+      SELECT
+        l.*,
+        c.name AS category
+      FROM listings l
+      JOIN categories c ON c.id = l.category_id
+      WHERE
+      #{clauses.join " AND "}
+      LIMIT $#{ph_idx}
+      OFFSET $#{ph_idx + 1}
+    SQL
+
+    listings = @db
+               .execute(query, params + [pagination.page_size, first_idx])
+               .map { |rec| LordOfWar::Listing.parse_json rec }
+
+    if listings.empty?
+      pagination.page = 0
+    else
+      load_listing_relations listings
+
+      # calculate pagination
+      query = <<~SQL
+        SELECT count(*) AS total
+        FROM listings l
+        WHERE
+        #{clauses.join " AND "}
+      SQL
+      total_results = @db.execute(query, params).map { |rec| rec['total'] }.first
+
+      pagination.total_records = total_results
+    end
+
+    listings
+  end
+
   def get_products(filters, pagination)
     clauses = ['p.price >= $1', 'p.price <= $2']
     params = [filters.min_price, filters.max_price]
@@ -77,11 +152,11 @@ class LordOfWar::Store::SqliteStore
     if prods.empty?
       pagination.page = 0
     else
-      load_relations prods
+      load_product_relations prods
 
       # calculate pagination
       query = <<~SQL
-        SELECT count(*) as total
+        SELECT count(*) AS total
         FROM products p
         #{favs_join if filters.favs_only?}
         WHERE
@@ -182,7 +257,15 @@ class LordOfWar::Store::SqliteStore
 
   private
 
-  def load_relations(products)
+  def load_listing_relations(listings)
+    listing_ids = listings.map(&:id)
+    imgs = listings_imgs listing_ids
+    listings.each do |l|
+      l.imgs = imgs[l.id]
+    end
+  end
+
+  def load_product_relations(products)
     product_ids = products.map(&:id)
 
     batteries = products_batteries product_ids
@@ -231,5 +314,16 @@ class LordOfWar::Store::SqliteStore
 
   def products_types(product_ids)
     products_relation product_ids, 'types', 'type'
+  end
+
+  def listings_relation(listings_ids, plural, singular)
+    phs = listings_ids.map.with_index { |_, idx| "$#{idx + 1}" }.join(',')
+    @db
+      .execute("SELECT a.listing_id, b.name FROM listings_#{plural} a JOIN #{plural} b ON b.id == a.#{singular}_id WHERE a.listing_id IN (#{phs})", listings_ids)
+      .each_with_object(Hash.new { |h, k| h[k] = [] }) { |rec, acc| acc[rec['listing_id']] << rec['name'] }
+  end
+
+  def listings_imgs(listings_ids)
+    listings_relation listings_ids, 'imgs', 'img'
   end
 end

@@ -573,3 +573,30 @@ label.paper-btn {
   justify-content: space-between;
   padding: 5px 0px;
 }
+
+.listing-img {
+  display: flex;
+  justify-content: center;
+}
+
+.listing-img img {
+  border: none;
+  width: 100%;
+}
+
+.listing-category {
+  justify-content: end;
+  display: flex;
+  margin-top: -48px;
+  margin-right: 4px;
+}
+
+.listing-desc {
+  margin: 40px 0;
+}
+
+.listing-price {
+  display: flex;
+  justify-content: center;
+  font-size: 2rem;
+}

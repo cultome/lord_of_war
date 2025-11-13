@@ -199,3 +199,21 @@ CREATE TABLE IF NOT EXISTS events (
   created_at DATETIME NOT NULL,
   FOREIGN KEY (created_by ) REFERENCES users(id)
 );
+
+-- Listing
+CREATE TABLE IF NOT EXISTS listings (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL,
+  search_corpus TEXT NOT NULL,
+  category_id TEXT,
+  FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE IF NOT EXISTS listings_imgs (
+  listing_id TEXT NOT NULL,
+  img_id TEXT NOT NULL,
+  FOREIGN KEY (listing_id) REFERENCES listings(id)
+  FOREIGN KEY (img_id) REFERENCES imgs(id)
+);
