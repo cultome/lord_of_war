@@ -4,6 +4,37 @@ class LordOfWar::Store::SqliteStore
     @db.results_as_hash = true
   end
 
+  def create_listing(listing, user_id)
+    query = <<~SQL
+      INSERT INTO listings(id, title, desc, price, search_corpus, category_id, created_by, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    SQL
+
+    params = [
+      SecureRandom.uuid,
+      listing.title,
+      listing.desc,
+      listing.price_amount,
+      listing.search_corpus,
+      listing.category_id,
+      user_id,
+      Time.now.iso8601,
+    ]
+
+    new_listing_id = @db.execute(query, params).map { |rec| rec['id'] }.first
+
+    return new_listing_id if listing.imgs.blank?
+
+    listing.imgs.each do |img|
+      query = 'INSERT INTO imgs(id, name) VALUES ($1, $2) RETURNING id'
+      new_img_id = @db.execute(query, [SecureRandom.uuid, img]).map { |rec| rec['id'] }.first
+
+      query = 'INSERT INTO listings_imgs(listing_id, img_id) VALUES ($1, $2)'
+      @db.execute query, [new_listing_id, new_img_id]
+    end
+  end
+
   def create_event(event)
     query = <<~SQL
       INSERT INTO events(id, title, datetime, place_name, place_url, desc, created_by, created_at)

@@ -107,14 +107,37 @@ class LordOfWar::Api < Sinatra::Base
     redirect to('/catalog')
   end
 
+  post '/listing-add' do
+    listing = LordOfWar::Listing.new(
+      params['title'],
+      params['desc'],
+      params['price'],
+      params['category_id'],
+      params['imgs']
+    )
+
+    new_listing_id = store.create_listing listing, @account.user.id
+
+    if new_listing_id.nil?
+      partial :listing_form, listing: listing, alert_type: 'danger', message: 'Ocurrio un error al crear el anuncio',
+                             categories: category_labels
+
+    else
+      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+      response.headers['HX-Redirect'] = "/marketplace?#{query_string}"
+
+      partial :listing_form, listing: listing, alert_type: 'secondary', message: 'Anuncio creado!', categories: category_labels
+    end
+  end
+
   post '/marketplace/upload-image' do
     file = params[:file]
     halt 400, 'No se recibió archivo' unless file && file[:tempfile]
 
-    filename = "#{SecureRandom.hex 6}_#{file[:filename]}"
-    filepath = File.join './uploads', filename
+    filename = "#{SecureRandom.uuid}.#{file[:filename].split(".").last}"
+    filepath = File.join './public/uploads', filename
 
-    FileUtils.mkdir_p './uploads'
+    FileUtils.mkdir_p './public/uploads'
     File.binwrite filepath, file[:tempfile].read
 
     partial :listing_upload_img, filename: filename
@@ -203,24 +226,6 @@ class LordOfWar::Api < Sinatra::Base
     )
   end
 
-  post '/listing-add' do
-    evt = LordOfWar::Listing.new(
-      # TODO
-      params['desc'],
-      @account.user.id
-    )
-
-    new_event_id = store.create_event evt
-
-    if new_event_id.nil?
-      partial :event_form, event: evt, alert_type: 'danger', message: 'Ocurrio un error al crear el evento'
-    else
-      response.headers['HX-Redirect'] = "/events?#{request.referer.split("?").last}"
-
-      partial :event_form, event: evt, alert_type: 'secondary', message: 'Evento creado!'
-    end
-  end
-
   post '/event-add' do
     evt = LordOfWar::Event.new(
       params['title'],
@@ -236,7 +241,8 @@ class LordOfWar::Api < Sinatra::Base
     if new_event_id.nil?
       partial :event_form, event: evt, alert_type: 'danger', message: 'Ocurrio un error al crear el evento'
     else
-      response.headers['HX-Redirect'] = "/events?#{request.referer.split("?").last}"
+      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+      response.headers['HX-Redirect'] = "/events?#{query_string}"
 
       partial :event_form, event: evt, alert_type: 'secondary', message: 'Evento creado!'
     end

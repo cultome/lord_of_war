@@ -1,5 +1,5 @@
 class LordOfWar::Listing
-  attr_accessor :id, :search_corpus, :title, :desc, :price, :category, :category_id, :imgs
+  attr_accessor :id, :title, :desc, :price, :category, :category_id, :imgs, :created_at, :created_by
 
   def self.parse_json(rec)
     obj = new(
@@ -11,16 +11,19 @@ class LordOfWar::Listing
 
     obj.id = rec['id']
     obj.category = rec['category']
+    obj.created_at = rec['created_at']
+    obj.created_by = rec['created_by']
     obj.imgs = rec['imgs'].present? ? rec['imgs'] : []
 
     obj
   end
 
-  def initialize(title, description, price, category_id)
+  def initialize(title, description, price, category_id, imgs = [])
     @title = title
     @desc = description
     @price = price
     @category_id = category_id
+    @imgs = imgs
   end
 
   def list_img
@@ -33,5 +36,9 @@ class LordOfWar::Listing
 
   def price
     "$#{@price} MXN"
+  end
+
+  def search_corpus
+    "#{title} #{desc} #{category}".downcase.tr 'áéíóú', 'aeiou'
   end
 end

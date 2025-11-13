@@ -208,6 +208,9 @@ CREATE TABLE IF NOT EXISTS listings (
   price DECIMAL,
   search_corpus TEXT NOT NULL,
   category_id TEXT,
+  created_by TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (created_by ) REFERENCES users(id)
   FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 

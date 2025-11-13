@@ -12,31 +12,39 @@
       <label for="desc">Descripcion</label>
       <textarea class="input-block" type="text" id="desc" rows="10" name="desc" value="<%= listing.desc %>" rows="10"></textarea>
     </div>
-    <div class="col col-12 form-group">
+
+    <div class="col col-6 form-group">
       <label for="price">Precio</label>
       <input class="input-block" type="text" id="price" name="price" value="<%= listing.price %>">
     </div>
-    <div class="col col-12 form-group">
+    <div class="col col-6 form-group">
       <label for="category_id">Categoria</label>
-      <input class="input-block" type="text" id="category_id" name="category_id" value="<%= listing.category %>">
+      <select id="category_id" name="category_id" value="<%= listing.category_id %>" class="input-block">
+      <% categories.each do |key, label| %>
+        <option value="<%= key%>"><%= label %></option>
+      <% end %>
+      </select>
     </div>
+
+    <form
+        hx-post="/marketplace/upload-image"
+        hx-trigger="change from:#img-input"
+        hx-target="#preview"
+        hx-swap="beforeend"
+        enctype="multipart/form-data"
+        method="POST" 
+        style="width: 100%">
+      <div class="col col-12 form-group">
+        <label for="img-input">Imagenes</label>
+        <input id="img-input" type="file" name="file" accept="image/*" class="input-block">
+      </div>
+    </form>
+
+    <div id="preview" class="listing-img-preview-container"></div>
   </div>
-
-  <form
-      hx-post="/marketplace/upload-image"
-      hx-trigger="change from:#img-input"
-      hx-target="#preview"
-      hx-swap="beforeend"
-      enctype="multipart/form-data"
-      method="POST" 
-      style="width: 100%">
-      <input id="img-input" type="file" name="file" accept="image/*">
-  </form>
-
-  <div id="preview" style="margin-top: 1em;"></div>
 
   <div class="btn-grp flex-spaces">
     <label for="modal-2" class="margin btn-block paper-btn btn-primary-outline">Cerrar</label>
-    <button hx-post="/listing-add" class="btn-block paper-btn btn-secondary-outline">Registrar!</button>
+    <button hx-post="/listing-add" hx-include="#title, #desc, #price, #category_id, .imgs-input" class="btn-block paper-btn btn-secondary-outline">Registrar!</button>
   </div>
 </div>
