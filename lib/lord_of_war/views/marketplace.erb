@@ -8,7 +8,7 @@
   <!-- Card begin -->
   <% listings.each do |listing| %>
     <div class="col col-3 border card">
-      <label for="modal-2" hx-get="/marketplace/<%= listing.id %>" hx-target="#listing" hx-swap="outerHTML">
+      <label for="modal-1" hx-get="/marketplace/<%= listing.id %>" hx-target="#listing" hx-swap="outerHTML">
         <div class="img-wrapper">
           <img class="product-img" src="<%= listing.list_img %>" />
         </div>
@@ -25,11 +25,11 @@
   <% end %>
   <!-- Card end -->
 
-  <input class="modal-state" id="modal-2" type="checkbox">
+  <input class="modal-state" id="modal-1" type="checkbox">
   <div class="modal">
-    <label class="modal-bg" for="modal-2"></label>
+    <label class="modal-bg" for="modal-1"></label>
     <div class="border modal-body" style="width: 70%">
-      <label class="btn-close" for="modal-2">X</label>
+      <label class="btn-close" for="modal-1">X</label>
       <div id="listing">
 
       </div>
@@ -38,3 +38,16 @@
 </div>
 
 <%= partial :pagination, pagination: pagination %>
+
+<div class="row ">
+  <label class="paper-btn btn-secondary-outline btn-block" for="modal-2">+ Anuncio</label>
+</div>
+<input class="modal-state" id="modal-2" type="checkbox">
+<div class="modal">
+  <label class="modal-bg" for="modal-2"></label>
+  <div class="border modal-body">
+    <label class="btn-close" for="modal-2">X</label>
+    <h4 class="modal-title">Registrar nuevo evento</h4>
+    <%= partial :listing_form, listing: listing %>
+  </div>
+</div>

@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS listings (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
-  description TEXT,
+  desc TEXT,
   price DECIMAL,
   search_corpus TEXT NOT NULL,
   category_id TEXT,

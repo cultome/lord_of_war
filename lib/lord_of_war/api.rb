@@ -1,6 +1,7 @@
 class LordOfWar::Api < Sinatra::Base
   include BCrypt
 
+  set :public_folder, './public'
   enable :sessions
 
   set :sessions, domain: 'localhost'
@@ -106,6 +107,19 @@ class LordOfWar::Api < Sinatra::Base
     redirect to('/catalog')
   end
 
+  post '/marketplace/upload-image' do
+    file = params[:file]
+    halt 400, 'No se recibió archivo' unless file && file[:tempfile]
+
+    filename = "#{SecureRandom.hex 6}_#{file[:filename]}"
+    filepath = File.join './uploads', filename
+
+    FileUtils.mkdir_p './uploads'
+    File.binwrite filepath, file[:tempfile].read
+
+    partial :listing_upload_img, filename: filename
+  end
+
   get '/marketplace/:id' do
     listing = store.find_listing params[:id]
 
@@ -152,6 +166,7 @@ class LordOfWar::Api < Sinatra::Base
         filters: filters,
         pagination: pagination,
         price_range: price_range,
+        listing: LordOfWar::Listing.parse_json({}),
       }
     )
   end
@@ -186,6 +201,24 @@ class LordOfWar::Api < Sinatra::Base
         next_month: next_month.strftime('%Y-%m'),
       }
     )
+  end
+
+  post '/listing-add' do
+    evt = LordOfWar::Listing.new(
+      # TODO
+      params['desc'],
+      @account.user.id
+    )
+
+    new_event_id = store.create_event evt
+
+    if new_event_id.nil?
+      partial :event_form, event: evt, alert_type: 'danger', message: 'Ocurrio un error al crear el evento'
+    else
+      response.headers['HX-Redirect'] = "/events?#{request.referer.split("?").last}"
+
+      partial :event_form, event: evt, alert_type: 'secondary', message: 'Evento creado!'
+    end
   end
 
   post '/event-add' do

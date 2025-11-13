@@ -1,0 +1,42 @@
+<div class="modal-text">
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <div class="row">
+    <div class="col col-12 form-group">
+      <label for="title">Titulo</label>
+      <input class="input-block" type="text" id="title" name="title" value="<%= listing.title %>" required>
+    </div>
+    <div class="col col-12 form-group">
+      <label for="desc">Descripcion</label>
+      <textarea class="input-block" type="text" id="desc" rows="10" name="desc" value="<%= listing.desc %>" rows="10"></textarea>
+    </div>
+    <div class="col col-12 form-group">
+      <label for="price">Precio</label>
+      <input class="input-block" type="text" id="price" name="price" value="<%= listing.price %>">
+    </div>
+    <div class="col col-12 form-group">
+      <label for="category_id">Categoria</label>
+      <input class="input-block" type="text" id="category_id" name="category_id" value="<%= listing.category %>">
+    </div>
+  </div>
+
+  <form
+      hx-post="/marketplace/upload-image"
+      hx-trigger="change from:#img-input"
+      hx-target="#preview"
+      hx-swap="beforeend"
+      enctype="multipart/form-data"
+      method="POST" 
+      style="width: 100%">
+      <input id="img-input" type="file" name="file" accept="image/*">
+  </form>
+
+  <div id="preview" style="margin-top: 1em;"></div>
+
+  <div class="btn-grp flex-spaces">
+    <label for="modal-2" class="margin btn-block paper-btn btn-primary-outline">Cerrar</label>
+    <button hx-post="/listing-add" class="btn-block paper-btn btn-secondary-outline">Registrar!</button>
+  </div>
+</div>
