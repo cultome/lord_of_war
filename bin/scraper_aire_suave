@@ -15,7 +15,7 @@ require 'lord_of_war'
 class AireSuave < Thor
   include LordOfWar::Utils
 
-  DATA_FOLDER = "#{File.dirname __FILE__}/aire_suave_data"
+  DATA_FOLDER = "#{File.dirname __FILE__}/../data/aire_suave_data"
 
   desc 'clean', 'Clean scrapped information'
   option :output, type: :string, required: true

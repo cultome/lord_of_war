@@ -6,7 +6,27 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
+  blood_type TEXT,
+  emergency_contact_name TEXT,
+  emergency_contact_phone TEXT
+);
+
+-- Teams
+
+CREATE TABLE IF NOT EXISTS teams (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  state TEXT,
+  page_url TEXT,
+  logo_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS users_teams (
+  user_id TEXT NOT NULL,
+  team_id TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
 -- Products

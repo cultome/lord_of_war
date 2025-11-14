@@ -29,6 +29,10 @@ class LordOfWar::Api < Sinatra::Base
     end
   end
 
+  ###############
+  # LoginRoutes #
+  ###############
+
   get '/login' do
     if session.key? :user_id
       redirect to('/')
@@ -60,6 +64,23 @@ class LordOfWar::Api < Sinatra::Base
     session[:user_id] = nil
 
     redirect to('/login')
+  end
+
+  #################
+  # ProfileRoutes #
+  #################
+
+  get '/profile' do
+    teams = store.get_teams
+
+    erb(
+      :profile,
+      locals: {
+        section_title: 'Mi perfil',
+        account: @account,
+        teams: teams,
+      }
+    )
   end
 
   post '/update-account' do
@@ -103,57 +124,17 @@ class LordOfWar::Api < Sinatra::Base
   post '/update-teams' do
   end
 
+  #############
+  # HomeRoute #
+  #############
+
   get '/' do
     redirect to('/catalog')
   end
 
-  post '/listing-add' do
-    listing = LordOfWar::Listing.new(
-      params['title'],
-      params['desc'],
-      params['price'],
-      params['category_id'],
-      params['imgs']
-    )
-
-    new_listing_id = store.create_listing listing, @account.user.id
-
-    if new_listing_id.nil?
-      partial :listing_form, listing: listing, alert_type: 'danger', message: 'Ocurrio un error al crear el anuncio',
-                             categories: category_labels
-
-    else
-      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
-      response.headers['HX-Redirect'] = "/marketplace?#{query_string}"
-
-      partial :listing_form, listing: listing, alert_type: 'secondary', message: 'Anuncio creado!', categories: category_labels
-    end
-  end
-
-  post '/marketplace/upload-image' do
-    file = params[:file]
-    halt 400, 'No se recibió archivo' unless file && file[:tempfile]
-
-    filename = "#{SecureRandom.uuid}.#{file[:filename].split(".").last}"
-    filepath = File.join './public/uploads', filename
-
-    FileUtils.mkdir_p './public/uploads'
-    File.binwrite filepath, file[:tempfile].read
-
-    partial :listing_upload_img, filename: filename
-  end
-
-  get '/marketplace/:id' do
-    listing = store.find_listing params[:id]
-
-    erb(
-      :listing,
-      layout: false,
-      locals: {
-        listing: listing,
-      }
-    )
-  end
+  ###############
+  # Marketplace #
+  ###############
 
   get '/marketplace' do
     filters = LordOfWar::Filters.new(
@@ -193,6 +174,58 @@ class LordOfWar::Api < Sinatra::Base
       }
     )
   end
+
+  post '/marketplace/upload-image' do
+    file = params[:file]
+    halt 400, 'No se recibió archivo' unless file && file[:tempfile]
+
+    filename = "#{SecureRandom.uuid}.#{file[:filename].split(".").last}"
+    filepath = File.join './public/uploads', filename
+
+    FileUtils.mkdir_p './public/uploads'
+    File.binwrite filepath, file[:tempfile].read
+
+    partial :listing_upload_img, filename: filename
+  end
+
+  get '/marketplace/:id' do
+    listing = store.find_listing params[:id]
+
+    erb(
+      :listing,
+      layout: false,
+      locals: {
+        listing: listing,
+      }
+    )
+  end
+
+  post '/listing-add' do
+    listing = LordOfWar::Listing.new(
+      params['title'],
+      params['desc'],
+      params['price'],
+      params['category_id'],
+      params['imgs']
+    )
+
+    new_listing_id = store.create_listing listing, @account.user.id
+
+    if new_listing_id.nil?
+      partial :listing_form, listing: listing, alert_type: 'danger', message: 'Ocurrio un error al crear el anuncio',
+                             categories: category_labels
+
+    else
+      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+      response.headers['HX-Redirect'] = "/marketplace?#{query_string}"
+
+      partial :listing_form, listing: listing, alert_type: 'secondary', message: 'Anuncio creado!', categories: category_labels
+    end
+  end
+
+  ###############
+  # EventRoutes #
+  ###############
 
   get '/events' do
     year, month = params.fetch('month', Time.now.strftime('%Y-%m')).split('-').map(&:to_i)
@@ -248,15 +281,9 @@ class LordOfWar::Api < Sinatra::Base
     end
   end
 
-  get '/profile' do
-    erb(
-      :profile,
-      locals: {
-        section_title: 'Mi perfil',
-        account: @account,
-      }
-    )
-  end
+  #############
+  # FavRoutes #
+  #############
 
   get '/favs' do
     filters = LordOfWar::Filters.new(
@@ -296,6 +323,22 @@ class LordOfWar::Api < Sinatra::Base
       }
     )
   end
+
+  post '/fav-remove/:id' do
+    product = store.find_product params[:id]
+    store.remove_fav product.id, @user.id
+    '' # remove element
+  end
+
+  post '/fav-toggle/:id' do
+    product = store.find_product params[:id]
+    new_state_is_active = store.toggle_fav product.id, @user.id
+    partial :fav_button, product: product, was_removed: !new_state_is_active, is_active: new_state_is_active
+  end
+
+  ###########
+  # Catalog #
+  ###########
 
   get '/catalog' do
     filters = LordOfWar::Filters.new(
@@ -337,45 +380,37 @@ class LordOfWar::Api < Sinatra::Base
     )
   end
 
-  post '/fav-remove/:id' do
-    product = store.find_product params[:id]
-    store.remove_fav product.id, @user.id
-    '' # remove element
-  end
-
-  post '/fav-toggle/:id' do
-    product = store.find_product params[:id]
-    new_state_is_active = store.toggle_fav product.id, @user.id
-    partial :fav_button, product: product, was_removed: !new_state_is_active, is_active: new_state_is_active
-  end
-
-  def to_money_format(value)
-    value.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
-  end
-
-  def category_labels
-    @@category_labels ||= begin
-      catalog = store.categories_catalog
-      {
-        catalog['replica'] => 'Replicas',
-        catalog['accessories'] => 'Accesorios',
-        catalog['gear'] => 'Equipo Tactico',
-        catalog['misc'] => 'Insumos',
-        catalog['consumable'] => 'Misc',
-      }
-    end
-  end
-
-  def password_complex_enough?(_value)
-    # TODO: implement
-    true
-  end
-
-  def store
-    @store ||= LordOfWar::Store::SqliteStore.new 'low.db'
-  end
+  #########
+  # Utils #
+  #########
 
   helpers do
+    def to_money_format(value)
+      value.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+    end
+
+    def category_labels
+      @@category_labels ||= begin
+        catalog = store.categories_catalog
+        {
+          catalog['replica'] => 'Replicas',
+          catalog['accessories'] => 'Accesorios',
+          catalog['gear'] => 'Equipo Tactico',
+          catalog['misc'] => 'Insumos',
+          catalog['consumable'] => 'Misc',
+        }
+      end
+    end
+
+    def password_complex_enough?(_value)
+      # TODO: implement
+      true
+    end
+
+    def store
+      @store ||= LordOfWar::Store::SqliteStore.new 'low.db'
+    end
+
     def partial(template, locals = {})
       erb :"_#{template}", layout: false, locals: locals
     end

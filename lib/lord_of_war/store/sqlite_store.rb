@@ -4,6 +4,12 @@ class LordOfWar::Store::SqliteStore
     @db.results_as_hash = true
   end
 
+  def get_teams
+    query = 'SELECT e.* FROM teams e'
+
+    @db.execute(query).map { |rec| LordOfWar::Team.parse_json rec }
+  end
+
   def create_listing(listing, user_id)
     query = <<~SQL
       INSERT INTO listings(id, title, desc, price, search_corpus, category_id, created_by, created_at)

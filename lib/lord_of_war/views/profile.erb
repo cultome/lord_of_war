@@ -13,13 +13,9 @@
 
   <div class="content" id="content1">
     <%= partial :account_form, account: account %>
-
     <hr />
-
     <%= partial :password_form %>
-
     <hr />
-
     <a href="/logout" class="paper-btn btn-danger-outline btn-block logout-btn">Cerrar session</a>
   </div>
 
@@ -82,21 +78,19 @@
       <fieldset class="form-group">
         <legend>Selecciona tu(s) equipo(s)</legend>
 
-        <label for="team1" class="paper-check team-check">
-          <input type="checkbox" name="teams[]" id="team1" value="1">
-          <span>
-            <img src="http://airsoft.elihuzero.com.mx/images/logos/033.png">
-            Division Oriente
-          </span>
-        </label>
-
-        <label for="team2" class="paper-check team-check">
-          <input type="checkbox" name="teams[]" id="team2" value="2">
-          <span>
-            <img src="http://airsoft.elihuzero.com.mx/images/logos/030.png">
-            Legion Azteca
-          </span>
-        </label>
+        <% teams.each do |team| %>
+          <label for="t<%= team.id %>" class="paper-check team-check">
+            <input type="checkbox" name="teams[]" id="t<%= team.id %>" value="<%= team.id %>">
+            <span>
+              <img src="<%= team.logo_url %>">
+              <% if team.page_url.blank? %>
+                <%= team.name %>
+              <% else %>
+                <a href="<%= team.page_url %>" target="_blank"><%= team.name %></a>
+              <% end %>
+            </span>
+          </label>
+        <% end %>
       </fieldset>
 
       <div class="row">

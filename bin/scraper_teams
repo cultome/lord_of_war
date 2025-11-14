@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+
+require 'httparty'
+require 'json'
+require 'nokogiri'
+require 'pry'
+require 'securerandom'
+require 'thor'
+
+class ScraperTeams < Thor
+  DATA_FOLDER = "#{File.dirname __FILE__}/../data"
+
+  BASE_URL = 'https://www.comunidadairsoftmexico.org/consulta.php?estado='
+
+  desc 'scrap', 'Scrap teams information'
+  def scrap
+    teams = [
+      'Aguascalientes',
+      'Baja California',
+      'Baja California Sur',
+      'Campeche',
+      'Chiapas',
+      'Chihuahua',
+      'Ciudad de Mexico',
+      'Coahuila',
+      'Colima',
+      'Durango',
+      'Estado de Mexico',
+      'Guanajuato',
+      'Guerrero',
+      'Hidalgo',
+      'Jalisco',
+      'Michoacan',
+      'Morelos',
+      'Nayarit',
+      'Nuevo Leon',
+      'Oaxaca',
+      'Puebla',
+      'Queretaro',
+      'Quintana Roo',
+      'San Luis Potosi',
+      'Sinaloa',
+      'Sonora',
+      'Tabasco',
+      'Tamaulipas',
+      'Tlaxcala',
+      'Veracruz',
+      'Yucatan',
+      'Zacatecas',
+    ].flat_map do |state|
+      print '.'
+
+      res = HTTParty.get(
+        "#{BASE_URL}#{state}",
+        headers: {
+          'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0',
+          'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language' => 'en-US,en;q=0.5',
+          'Accept-Encoding' => 'gzip, deflate, br, zstd',
+        }
+      )
+
+      doc = Nokogiri::HTML res.body
+      doc.css('div a').zip(doc.css('div img')).map do |a, img|
+        {
+          name: a.text,
+          url: a['href'],
+          img_url: img['src'],
+          state: state,
+        }
+      end
+    end
+
+    File.write "#{DATA_FOLDER}/teams.json", teams.to_json
+
+    puts '[+] Done!'
+  end
+
+  desc 'gensql', 'Generate SQL insert for the seeds'
+  def gensql
+    recs = JSON.parse File.read("#{DATA_FOLDER}/teams.json")
+
+    queries = recs.map do |r|
+      "('#{SecureRandom.uuid}', '#{r["name"]}', '#{r["state"]}', '#{r["url"]}', '#{r["img_url"]}')"
+    end
+
+    puts "INSERT INTO teams(id, name, state, page_url, logo_url) VALUES\n#{queries.join ",\n"}"
+  end
+end
+
+ScraperTeams.start ARGV
