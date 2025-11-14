@@ -4,11 +4,91 @@ class LordOfWar::Store::SqliteStore
     @db.results_as_hash = true
   end
 
+  ###########
+  # Catalog #
+  ###########
+
+  def get_products(filters, pagination)
+    clauses = ['p.price >= $1', 'p.price <= $2']
+    params = [filters.min_price, filters.max_price]
+    ph_idx = 3
+
+    unless filters.search_empty?
+      clauses << "p.search_corpus LIKE $#{ph_idx}"
+      params << "%#{filters.search}%"
+      ph_idx += 1
+    end
+
+    unless filters.categories_empty?
+      ph = filters.categories.map.with_index { |_, idx| "$#{idx + ph_idx}" }.join(',')
+      clauses << "p.category_id IN (#{ph})"
+      filters.categories.each { |cat| params << cat }
+      ph_idx += filters.categories.size
+    end
+
+    first_idx, = pagination.results_range
+
+    favs_join = "JOIN favs f ON f.product_id = p.id AND f.user_id = '#{filters.user_id}'"
+
+    query = <<~SQL
+      SELECT p.*
+      FROM products p
+      #{favs_join if filters.favs_only?}
+      WHERE
+      #{clauses.join " AND "}
+      LIMIT $#{ph_idx}
+      OFFSET $#{ph_idx + 1}
+    SQL
+
+    prods = @db
+            .execute(query, params + [pagination.page_size, first_idx])
+            .map { |rec| LordOfWar::Product.parse_json rec }
+
+    if prods.empty?
+      pagination.page = 0
+    else
+      load_product_relations prods
+
+      # calculate pagination
+      query = <<~SQL
+        SELECT count(*) AS total
+        FROM products p
+        #{favs_join if filters.favs_only?}
+        WHERE
+        #{clauses.join " AND "}
+      SQL
+      total_results = @db.execute(query, params).map { |rec| rec['total'] }.first
+
+      pagination.total_records = total_results
+    end
+
+    prods
+  end
+
+  def find_product(id)
+    @db
+      .execute('SELECT * FROM products WHERE id = $1', [id])
+      .map { |rec| LordOfWar::Product.parse_json rec }
+      .first
+  end
+
+  def categories_catalog
+    @db.execute('SELECT id, name FROM categories').each_with_object({}) { |rec, acc| acc[rec['name']] = rec['id'] }
+  end
+
+  #########
+  # Teams #
+  #########
+
   def get_teams
     query = 'SELECT e.* FROM teams e'
 
     @db.execute(query).map { |rec| LordOfWar::Team.parse_json rec }
   end
+
+  ###############
+  # Marketplace #
+  ###############
 
   def create_listing(listing, user_id)
     query = <<~SQL
@@ -39,40 +119,6 @@ class LordOfWar::Store::SqliteStore
       query = 'INSERT INTO listings_imgs(listing_id, img_id) VALUES ($1, $2)'
       @db.execute query, [new_listing_id, new_img_id]
     end
-  end
-
-  def create_event(event)
-    query = <<~SQL
-      INSERT INTO events(id, title, datetime, place_name, place_url, desc, created_by, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id
-    SQL
-
-    params = [
-      SecureRandom.uuid,
-      event.title,
-      event.datetime.iso8601,
-      event.place_name,
-      event.place_url,
-      event.desc,
-      event.created_by,
-      Time.now.iso8601,
-    ]
-
-    @db.execute(query, params).map { |rec| rec['id'] }.first
-  end
-
-  def get_events(_user_id, month)
-    query = <<~SQL
-      SELECT e.*
-      FROM events e
-      WHERE e.datetime >= $1 AND e.datetime <= $2
-    SQL
-
-    dt_start = "#{month.strftime "%Y-%m-%d"}T00:00:00-06:00"
-    dt_end = "#{month.next_month.strftime "%Y-%m-%d"}T00:00:00-06:00"
-
-    @db.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Event.parse_json rec }
   end
 
   def find_listing(id)
@@ -150,69 +196,47 @@ class LordOfWar::Store::SqliteStore
     listings
   end
 
-  def get_products(filters, pagination)
-    clauses = ['p.price >= $1', 'p.price <= $2']
-    params = [filters.min_price, filters.max_price]
-    ph_idx = 3
+  ##########
+  # Events #
+  ##########
 
-    unless filters.search_empty?
-      clauses << "p.search_corpus LIKE $#{ph_idx}"
-      params << "%#{filters.search}%"
-      ph_idx += 1
-    end
-
-    unless filters.categories_empty?
-      ph = filters.categories.map.with_index { |_, idx| "$#{idx + ph_idx}" }.join(',')
-      clauses << "p.category_id IN (#{ph})"
-      filters.categories.each { |cat| params << cat }
-      ph_idx += filters.categories.size
-    end
-
-    first_idx, = pagination.results_range
-
-    favs_join = "JOIN favs f ON f.product_id = p.id AND f.user_id = '#{filters.user_id}'"
-
+  def create_event(event)
     query = <<~SQL
-      SELECT p.*
-      FROM products p
-      #{favs_join if filters.favs_only?}
-      WHERE
-      #{clauses.join " AND "}
-      LIMIT $#{ph_idx}
-      OFFSET $#{ph_idx + 1}
+      INSERT INTO events(id, title, datetime, place_name, place_url, desc, created_by, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
     SQL
 
-    prods = @db
-            .execute(query, params + [pagination.page_size, first_idx])
-            .map { |rec| LordOfWar::Product.parse_json rec }
+    params = [
+      SecureRandom.uuid,
+      event.title,
+      event.datetime.iso8601,
+      event.place_name,
+      event.place_url,
+      event.desc,
+      event.created_by,
+      Time.now.iso8601,
+    ]
 
-    if prods.empty?
-      pagination.page = 0
-    else
-      load_product_relations prods
-
-      # calculate pagination
-      query = <<~SQL
-        SELECT count(*) AS total
-        FROM products p
-        #{favs_join if filters.favs_only?}
-        WHERE
-        #{clauses.join " AND "}
-      SQL
-      total_results = @db.execute(query, params).map { |rec| rec['total'] }.first
-
-      pagination.total_records = total_results
-    end
-
-    prods
+    @db.execute(query, params).map { |rec| rec['id'] }.first
   end
 
-  def find_product(id)
-    @db
-      .execute('SELECT * FROM products WHERE id = $1', [id])
-      .map { |rec| LordOfWar::Product.parse_json rec }
-      .first
+  def get_events(_user_id, month)
+    query = <<~SQL
+      SELECT e.*
+      FROM events e
+      WHERE e.datetime >= $1 AND e.datetime <= $2
+    SQL
+
+    dt_start = "#{month.strftime "%Y-%m-%d"}T00:00:00-06:00"
+    dt_end = "#{month.next_month.strftime "%Y-%m-%d"}T00:00:00-06:00"
+
+    @db.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Event.parse_json rec }
   end
+
+  ########
+  # Favs #
+  ########
 
   def toggle_fav(product_id, user_id)
     existing_record = @db
@@ -250,9 +274,9 @@ class LordOfWar::Store::SqliteStore
       .each_with_object({}) { |rec, acc| acc[rec['product_id']] = true }
   end
 
-  def categories_catalog
-    @db.execute('SELECT id, name FROM categories').each_with_object({}) { |rec, acc| acc[rec['name']] = rec['id'] }
-  end
+  #########
+  # Users #
+  #########
 
   def find_user(user_id)
     @db
@@ -267,6 +291,10 @@ class LordOfWar::Store::SqliteStore
       .map { |rec| LordOfWar::User.parse_json rec }
       .first
   end
+
+  ###########
+  # Profile #
+  ###########
 
   def username_exists?(username)
     @db
