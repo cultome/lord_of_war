@@ -611,3 +611,8 @@ label.paper-btn {
 .listing-img-preview {
   max-width: 70px;
 }
+
+.team-notes {
+  display: flex;
+  justify-content: center;
+}

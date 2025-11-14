@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS teams (
   state TEXT,
   page_url TEXT,
   logo_url TEXT
+  owner_id TEXT NOT NULL,
+  FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS users_teams (
