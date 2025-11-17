@@ -10,7 +10,7 @@
     <div class="col col-3 border card" id="card<%= product.id %>">
       <div class="img-wrapper">
         <img class="product-img" src="<%= product.list_img %>" />
-        <%= partial :trash_button, product: product, is_active: true %>
+        <%= partial :trash_button, url: "/favs/#{product.id}", id: product.id, is_active: true %>
       </div>
 
       <div class="card-body">

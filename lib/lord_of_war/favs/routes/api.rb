@@ -23,7 +23,7 @@ class LordOfWar::Favs::Routes::Api < Sinatra::Base
     end
   end
 
-  post '/fav-remove/:id' do
+  delete '/favs/:id' do
     res = LordOfWar::Favs::Service::RemoveFav.new(
       params['id'],
       @user.id,

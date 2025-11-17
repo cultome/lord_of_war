@@ -60,4 +60,7 @@ class LordOfWar::Marketplace::Routes::Api < Sinatra::Base
                              categories: res.value[:category_labels]
     end
   end
+
+  delete '/listings/:id' do
+  end
 end

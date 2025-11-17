@@ -11,6 +11,9 @@
       <label for="modal-1" hx-get="/marketplace/<%= listing.id %>" hx-target="#listing" hx-swap="outerHTML">
         <div class="img-wrapper">
           <img class="product-img" src="<%= listing.list_img %>" />
+          <% if listing.created_by == account.user.id %>
+            <%= partial :trash_button, url: "/listings/#{listing.id}", id: listing.id, is_active: true %>
+          <% end %>
         </div>
 
         <div class="card-body">
