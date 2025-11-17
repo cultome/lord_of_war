@@ -3,8 +3,6 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
 
   set :views, VIEWS_FOLDER
 
-  include BCrypt
-
   before do
     authenticate!
   end
@@ -25,38 +23,28 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
   end
 
   post '/update-account' do
-    if @account.user.username == params['username']
-      partial :account_form, { account: @account, alert_type: 'warning', message: 'Ya tienes este nombre de usuario!' }
-    elsif store.username_exists? params['username']
-      partial :account_form,
-              { account: @account, alert_type: 'danger', message: "El nombre de usuario [#{params["username"]}] no esta disponible" }
-    elsif store.update_username! @account.user.id, params['username']
-      @account.user.username = params['username']
+    res = LordOfWar::Profile::Service::UpdateAccount.new(
+      params['username'],
+      @account.user.username,
+      @account.user.id
+    ).execute!
 
-      partial :account_form, { account: @account, alert_type: 'secondary', message: 'Actualizacion exitosa!' }
+    if res.success?
+      partial :account_form, { account: @account, alert_type: res.alert_type, message: 'Actualizacion exitosa!' }
     else
-      partial :account_form, { account: @account, alert_type: 'danger', message: 'Sucedio un error al actualizar tu nombre de usuario!' }
+      partial :account_form, { account: @account, alert_type: res.alert_type, message: res.error }
     end
   end
 
   post '/update-password' do
-    locals = { account: @account }
+    res = LordOfWar::Profile::Service::UpdatePassword.new(
+      @account.user.password,
+      params['cpasswd'],
+      params['npasswd'],
+      @account.user.id,
+    ).execute!
 
-    if BCrypt::Password.new(@account.user.password) == params['cpasswd']
-      if password_complex_enough? params['npasswd']
-        if store.update_password! @account.user.id, BCrypt::Password.create(params['npasswd'])
-          locals.merge! alert_type: 'secondary', message: 'Actualizacion exitosa!'
-        else
-          locals.merge! alert_type: 'danger', message: 'Sucedio un error al actualizar tu contraseña!'
-        end
-      else
-        locals.merge! alert_type: 'danger', message: 'Tu nueva contrasena es muy simple. Agrega mayusculas, numeros y simbolos.'
-      end
-    else
-      locals.merge! alert_type: 'danger', message: 'Tu contraseña actual es incorrecta!'
-    end
-
-    partial :password_form, locals
+    partial :password_form, account: @account, alert_type: res.alert_type, message: res.success? ? res.value : res.error
   end
 
   post '/update-emergency' do

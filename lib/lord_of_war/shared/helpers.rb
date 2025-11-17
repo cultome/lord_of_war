@@ -24,11 +24,6 @@ module LordOfWar::Shared::Helpers
     end
   end
 
-  def password_complex_enough?(_value)
-    # TODO: implement
-    true
-  end
-
   def partial(template, locals = {})
     erb :"_#{template}", layout: false, locals: locals
   end

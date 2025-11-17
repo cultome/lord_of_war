@@ -1,6 +1,6 @@
 class LordOfWar::Profile::Repository::Profile
   def username_exists?(username)
-    @db
+    DB
       .execute('SELECT id FROM users where username like $1', [username])
       .map { |rec| rec['id'] }
       .first
@@ -8,7 +8,7 @@ class LordOfWar::Profile::Repository::Profile
   end
 
   def update_password!(user_id, password)
-    @db
+    DB
       .execute('UPDATE users SET password = $1 WHERE id = $2 RETURNING id', [password, user_id])
       .map { |rec| rec['id'] }
       .first
@@ -16,7 +16,7 @@ class LordOfWar::Profile::Repository::Profile
   end
 
   def update_username!(user_id, username)
-    @db
+    DB
       .execute('UPDATE users SET username = $1 WHERE id = $2 RETURNING id', [username, user_id])
       .map { |rec| rec['id'] }
       .first
