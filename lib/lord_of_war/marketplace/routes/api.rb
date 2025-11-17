@@ -62,5 +62,18 @@ class LordOfWar::Marketplace::Routes::Api < Sinatra::Base
   end
 
   delete '/listings/:id' do
+    res = LordOfWar::Marketplace::Service::DeleteListing.new(
+      params['id'],
+      @account.user.id
+    ).execute!
+
+    if res.success?
+      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+      response.headers['HX-Redirect'] = "/marketplace?#{query_string}"
+
+      partial :empty
+    else
+      partial :alert, alert_type: res.alert_type, message: res.error
+    end
   end
 end

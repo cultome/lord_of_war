@@ -24,4 +24,8 @@ module LordOfWar::Shared::Service::Responses
   def success(value, alert_type: 'secondary')
     ServiceResponse.new value, nil, alert_type
   end
+
+  def success_empty
+    ServiceResponse.new '', nil, 'secondary'
+  end
 end

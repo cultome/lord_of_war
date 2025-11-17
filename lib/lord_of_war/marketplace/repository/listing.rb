@@ -30,6 +30,13 @@ class LordOfWar::Marketplace::Repository::Listing
     end
   end
 
+  def delete_listing!(id, user_id)
+    DB.execute(
+      'DELETE FROM listings WHERE id = $1 AND created_by = $2 RETURNING id',
+      [id, user_id]
+    ).map { |rec| rec['id'] }.first.present?
+  end
+
   def find_listing(id)
     query = <<~SQL
       SELECT

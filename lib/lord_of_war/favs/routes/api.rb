@@ -14,24 +14,18 @@ class LordOfWar::Favs::Routes::Api < Sinatra::Base
       params['categories'],
       params['min_price'],
       params['max_price'],
-      params['page'],
+      params['page']
     ).execute!
 
-    if res.success?
-      erb(:favs, locals: { account: @account }.merge(res.value))
-    else
-    end
+    erb :favs, locals: { account: @account }.merge(res.value) if res.success?
   end
 
   delete '/favs/:id' do
     res = LordOfWar::Favs::Service::RemoveFav.new(
       params['id'],
-      @user.id,
+      @user.id
     ).execute!
 
-    if res.success?
-      res.value
-    else
-    end
+    res.value if res.success?
   end
 end

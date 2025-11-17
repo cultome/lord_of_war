@@ -1,3 +1,3 @@
-<button class="img-action-btn trash-btn <%= is_active ? 'active' : '' %>" id="fav<%= id %>" hx-delete="<%= url %>" hx-swap="outerHTML" hx-target="#card<%= id %>">
+<button class="img-action-btn trash-btn <%= 'active' if is_active %>" id="fav<%= id %>" hx-delete="<%= url %>" hx-swap="outerHTML" hx-target="#card<%= id %>">
   <%= partial :trash_svg %>
 </button>

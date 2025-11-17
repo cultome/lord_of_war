@@ -1,5 +1,7 @@
 <%= partial :filters_form, url: '/marketplace', filters: filters, price_range: price_range, categories: categories %>
 
+<div id="alert-area"></div>
+
 <div class="row">
   <% if listings.empty? %>
     <div class="col-12 no-results">No hay resultados para tu busqueda</div>
@@ -12,7 +14,7 @@
         <div class="img-wrapper">
           <img class="product-img" src="<%= listing.list_img %>" />
           <% if listing.created_by == account.user.id %>
-            <%= partial :trash_button, url: "/listings/#{listing.id}", id: listing.id, is_active: true %>
+            <%= partial :trash_button_listing, url: "/listings/#{listing.id}", id: listing.id, is_active: true %>
           <% end %>
         </div>
 
