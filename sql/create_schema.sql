@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS teams (
   name TEXT NOT NULL,
   state TEXT,
   page_url TEXT,
-  logo_url TEXT
+  logo_url TEXT,
   owner_id TEXT NOT NULL,
   FOREIGN KEY (owner_id) REFERENCES users(id)
 );
@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS capacities (
 
 CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  label_es TEXT,
+  menu_order INT
 );
 
 CREATE TABLE IF NOT EXISTS fps_ranges (

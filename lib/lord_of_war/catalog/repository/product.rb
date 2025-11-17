@@ -63,10 +63,6 @@ class LordOfWar::Catalog::Repository::Product
       .first
   end
 
-  def categories_catalog
-    DB.execute('SELECT id, name FROM categories').each_with_object({}) { |rec, acc| acc[rec['name']] = rec['id'] }
-  end
-
   private
 
   def load_product_relations(products)

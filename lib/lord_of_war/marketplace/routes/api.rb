@@ -1,47 +1,23 @@
 class LordOfWar::Marketplace::Routes::Api < Sinatra::Base
   helpers LordOfWar::Shared::Helpers
 
+  set :views, VIEWS_FOLDER
+
   before do
     authenticate!
   end
 
   get '/marketplace' do
-    filters = LordOfWar::Shared::Entity::Filters.new(
-      user_id: @user.id,
-      search: params['search'],
-      categories: params['categories'],
-      min_price: params['min-price'],
-      max_price: params['max-price']
-    )
+    res = LordOfWar::Marketplace::Service::DisplayProducts.new(
+      @user.id,
+      params['search'],
+      params['categories'],
+      params['min-price'],
+      params['max-price'],
+      params['page']
+    ).execute!
 
-    pagination = LordOfWar::Shared::Entity::Pagination.new params['page']
-
-    listings = store.get_listings filters, pagination
-
-    prices = listings.map(&:price_amount).select(&:positive?)
-    price_min = prices.min
-    price_max = prices.max
-
-    price_range = {
-      min: price_min,
-      min_placeholder: "$#{to_money_format price_min}",
-      max: price_max,
-      max_placeholder: "$#{to_money_format price_max}",
-    }
-
-    erb(
-      :marketplace,
-      locals: {
-        section_title: 'Bazar de guerra',
-        account: @account,
-        listings: listings,
-        categories: category_labels,
-        filters: filters,
-        pagination: pagination,
-        price_range: price_range,
-        listing: LordOfWar::Listing.parse_json({}),
-      }
-    )
+    erb :marketplace, locals: { account: @account }.merge(res.value) if res.success?
   end
 
   post '/marketplace/upload-image' do
@@ -58,37 +34,30 @@ class LordOfWar::Marketplace::Routes::Api < Sinatra::Base
   end
 
   get '/marketplace/:id' do
-    listing = store.find_listing params[:id]
+    res = LordOfWar::Marketplace::Service::ListingDetails.new(params[:id]).execute!
 
-    erb(
-      :listing,
-      layout: false,
-      locals: {
-        listing: listing,
-      }
-    )
+    erb :listing, layout: false, locals: res.value if res.success?
   end
 
   post '/listing-add' do
-    listing = LordOfWar::Listing.new(
+    res = LordOfWar::Marketplace::Service::CreateListing.new(
       params['title'],
       params['desc'],
       params['price'],
       params['category_id'],
-      params['imgs']
-    )
+      params['imgs'],
+      @account.user.id
+    ).execute!
 
-    new_listing_id = store.create_listing listing, @account.user.id
-
-    if new_listing_id.nil?
-      partial :listing_form, listing: listing, alert_type: 'danger', message: 'Ocurrio un error al crear el anuncio',
-                             categories: category_labels
-
-    else
+    if res.success?
       query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
       response.headers['HX-Redirect'] = "/marketplace?#{query_string}"
 
-      partial :listing_form, listing: listing, alert_type: 'secondary', message: 'Anuncio creado!', categories: category_labels
+      partial :listing_form, listing: res.value[:listing], alert_type: res.alert_type, message: 'Anuncio creado!',
+                             categories: res.value[:category_labels]
+    else
+      partial :listing_form, listing: res.value[:listing], alert_type: res.alert_type, message: res.error,
+                             categories: res.value[:category_labels]
     end
   end
 end

@@ -1,4 +1,4 @@
-class LordOfWar::Listing
+class LordOfWar::Marketplace::Entity::Listing
   attr_accessor :id, :title, :desc, :price, :category, :category_id, :imgs, :created_at, :created_by
 
   def self.parse_json(rec)

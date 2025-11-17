@@ -1,4 +1,4 @@
-class LordOfWar::Catalog::Service::DisplayCatalog
+class LordOfWar::Marketplace::Service::DisplayProducts
   include LordOfWar::Shared::Service::Responses
   include LordOfWar::Shared::Utils
 
@@ -24,10 +24,9 @@ class LordOfWar::Catalog::Service::DisplayCatalog
 
     pagination = LordOfWar::Shared::Entity::Pagination.new page
 
-    products = product_store.get_products filters, pagination
-    favs = favs_store.filter_by_favs products, user_id
+    listings = listing_store.get_listings filters, pagination
 
-    prices = products.map(&:price_amount).select(&:positive?)
+    prices = listings.map(&:price_amount).select(&:positive?)
     price_min = prices.min
     price_max = prices.max
 
@@ -39,24 +38,20 @@ class LordOfWar::Catalog::Service::DisplayCatalog
     }
 
     success({
-      products: products,
+      section_title: 'Bazar de guerra',
+      listings: listings,
       categories: catalogs_store.category_labels,
       filters: filters,
       pagination: pagination,
       price_range: price_range,
-      favs: favs,
-      section_title: 'Catalogo',
+      listing: LordOfWar::Marketplace::Entity::Listing.parse_json({}),
     })
   end
 
   private
 
-  def favs_store
-    @favs_store ||= LordOfWar::Catalog::Repository::Favs.new
-  end
-
-  def product_store
-    @product_store ||= LordOfWar::Catalog::Repository::Product.new
+  def listing_store
+    @listing_store ||= LordOfWar::Marketplace::Repository::Listing.new
   end
 
   def catalogs_store

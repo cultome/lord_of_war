@@ -13,7 +13,7 @@ class LordOfWar::Catalog::Service::ToggleFav
     product = product_store.find_product id
     new_state_is_active = favs_store.toggle_fav product.id, user_id
 
-    success(product: product, was_removed: !new_state_is_active, is_active: new_state_is_active)
+    success({ product: product, was_removed: !new_state_is_active, is_active: new_state_is_active })
   end
 
   private

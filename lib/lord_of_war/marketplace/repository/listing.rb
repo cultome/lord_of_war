@@ -17,16 +17,16 @@ class LordOfWar::Marketplace::Repository::Listing
       Time.now.iso8601,
     ]
 
-    new_listing_id = @db.execute(query, params).map { |rec| rec['id'] }.first
+    new_listing_id = DB.execute(query, params).map { |rec| rec['id'] }.first
 
     return new_listing_id if listing.imgs.blank?
 
     listing.imgs.each do |img|
       query = 'INSERT INTO imgs(id, name) VALUES ($1, $2) RETURNING id'
-      new_img_id = @db.execute(query, [SecureRandom.uuid, img]).map { |rec| rec['id'] }.first
+      new_img_id = DB.execute(query, [SecureRandom.uuid, img]).map { |rec| rec['id'] }.first
 
       query = 'INSERT INTO listings_imgs(listing_id, img_id) VALUES ($1, $2)'
-      @db.execute query, [new_listing_id, new_img_id]
+      DB.execute query, [new_listing_id, new_img_id]
     end
   end
 
@@ -34,15 +34,15 @@ class LordOfWar::Marketplace::Repository::Listing
     query = <<~SQL
       SELECT
         l.*,
-        c.name AS category
+        c.label_es AS category
       FROM listings l
       JOIN categories c ON c.id = l.category_id
       WHERE l.id = $1
     SQL
 
-    listings = @db
+    listings = DB
                .execute(query, [id])
-               .map { |rec| LordOfWar::Listing.parse_json rec }
+               .map { |rec| LordOfWar::Marketplace::Entity::Listing.parse_json rec }
 
     load_listing_relations listings
 
@@ -81,9 +81,9 @@ class LordOfWar::Marketplace::Repository::Listing
       OFFSET $#{ph_idx + 1}
     SQL
 
-    listings = @db
+    listings = DB
                .execute(query, params + [pagination.page_size, first_idx])
-               .map { |rec| LordOfWar::Listing.parse_json rec }
+               .map { |rec| LordOfWar::Marketplace::Entity::Listing.parse_json rec }
 
     if listings.empty?
       pagination.page = 0
@@ -97,7 +97,7 @@ class LordOfWar::Marketplace::Repository::Listing
         WHERE
         #{clauses.join " AND "}
       SQL
-      total_results = @db.execute(query, params).map { |rec| rec['total'] }.first
+      total_results = DB.execute(query, params).map { |rec| rec['total'] }.first
 
       pagination.total_records = total_results
     end
@@ -117,7 +117,7 @@ class LordOfWar::Marketplace::Repository::Listing
 
   def listings_relation(listings_ids, plural, singular)
     phs = listings_ids.map.with_index { |_, idx| "$#{idx + 1}" }.join(',')
-    @db
+    DB
       .execute("SELECT a.listing_id, b.name FROM listings_#{plural} a JOIN #{plural} b ON b.id == a.#{singular}_id WHERE a.listing_id IN (#{phs})", listings_ids)
       .each_with_object(Hash.new { |h, k| h[k] = [] }) { |rec, acc| acc[rec['listing_id']] << rec['name'] }
   end

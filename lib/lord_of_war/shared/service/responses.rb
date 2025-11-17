@@ -13,6 +13,10 @@ module LordOfWar::Shared::Service::Responses
     end
   end
 
+  def error_with_value(error, value, alert_type: 'danger')
+    ServiceResponse.new value, error, alert_type
+  end
+
   def error(error, alert_type: 'danger')
     ServiceResponse.new nil, error, alert_type
   end

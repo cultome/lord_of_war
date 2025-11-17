@@ -38,32 +38,23 @@ class LordOfWar::Favs::Service::DisplayFavs
       max_placeholder: "$#{to_money_format price_max}",
     }
 
-    success(
+    success({
       products: products,
-      categories: category_labels,
+      categories: catalogs_store.category_labels,
       filters: filters,
       pagination: pagination,
       price_range: price_range,
       section_title: 'Mi Favs',
-    )
+    })
   end
 
   private
 
-  def category_labels
-    @@category_labels ||= begin
-      catalog = product_store.categories_catalog
-      {
-        catalog['replica'] => 'Replicas',
-        catalog['accessories'] => 'Accesorios',
-        catalog['gear'] => 'Equipo Tactico',
-        catalog['misc'] => 'Insumos',
-        catalog['consumable'] => 'Misc',
-      }
-    end
-  end
-
   def product_store
     @product_store ||= LordOfWar::Catalog::Repository::Product.new
+  end
+
+  def catalogs_store
+    @catalogs_store ||= LordOfWar::Shared::Repository::Catalogs.new
   end
 end
