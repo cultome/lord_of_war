@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    lord_of_war (0.1.0)
+    lord_of_war (1.0.0)
 
 GEM
   remote: https://rubygems.org/

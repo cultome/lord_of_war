@@ -1,3 +1,3 @@
-require './lib/lord_of_war'
+require './config/environment'
 
-run LordOfWar::Api
+run App
