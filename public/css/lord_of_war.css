@@ -395,12 +395,12 @@ footer a {
   width: 30px;
 }
 
-.my-gear {
+.equipment {
   display: flex;
-  justify-content: space-evenly;
+  justify-content: space-between;
 }
 
-.my-gear svg {
+.equipment svg {
   height: 100%;
 }
 

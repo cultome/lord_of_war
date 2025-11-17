@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS users (
   emergency_contact_phone TEXT
 );
 
+-- Equipment
+
+CREATE TABLE IF NOT EXISTS equipment (
+  user_id TEXT NOT NULL,
+  kind TEXT,
+  name TEXT,
+  url TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Teams
 
 CREATE TABLE IF NOT EXISTS teams (

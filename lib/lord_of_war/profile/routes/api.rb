@@ -85,4 +85,26 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
                 message: res.error, }
     end
   end
+
+  get '/equipment/:kind' do
+    kind_label = {
+      'hands' => 'Manos',
+      'primary' => 'Replica Primaria',
+      'secondary' => 'Replica Secundaria',
+      'jacket' => 'Chaleco',
+      'shoes' => 'Calzado',
+      'pants' => 'Pantalones',
+      'belt' => 'Cinturon',
+      'chest' => 'Pecho',
+      'helmet' => 'Casco',
+      'face' => 'Cara',
+    }.fetch(params[:kind], params[:kind])
+
+    res = LordOfWar::Profile::Service::DisplayEquipment.new(
+      params['kind'],
+      @account.user.id
+    ).execute!
+
+    partial :equipment, kind: kind_label, equipment: res.value
+  end
 end

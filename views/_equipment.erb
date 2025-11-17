@@ -1,0 +1,15 @@
+<div id="equipment" class="equipment">
+  <%= partial :soldier_svg %>
+
+  <div class="equipment-area">
+    <% if defined?(kind) %>
+      <div class="kind"><%= kind %></div>
+      <ul class="equipment-list">
+        <% equipment.each do |eq| %>
+          <li><a href="<%= eq.url %>"><%= eq.name %></a></li>
+        <% end %>
+      </ul>
+      <button style="width: 100%; padding: 5px;">+</button>
+    <% end %>
+  </div>
+</div>
