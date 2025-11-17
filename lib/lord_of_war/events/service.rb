@@ -3,3 +3,4 @@ end
 
 require_relative './service/display_events'
 require_relative './service/create_event'
+require_relative './service/delete_event'

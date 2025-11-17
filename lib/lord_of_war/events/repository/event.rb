@@ -32,4 +32,10 @@ class LordOfWar::Events::Repository::Event
 
     DB.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Events::Entity::Event.parse_json rec }
   end
+
+  def delete_event!(id, user_id)
+    query = 'DELETE FROM events WHERE id = $1 AND created_by = $2 RETURNING id'
+
+    DB.execute(query, [id, user_id]).map { |rec| rec['id'] }.first.present?
+  end
 end

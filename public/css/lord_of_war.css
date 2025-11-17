@@ -629,13 +629,24 @@ label.paper-btn {
   align-items: center;
 }
 
+a.delete-btn svg,
 .equipment-listing svg {
   width: 24px;
 }
 
+a.delete-btn,
 .equipment-listing a {
   justify-content: flex-start;
   display: flex;
   text-decoration: none;
   background: none;
+}
+
+a.delete-btn {
+  margin-left: 10px;
+}
+
+.event-details {
+  display: flex;
+  justify-content: space-between;
 }

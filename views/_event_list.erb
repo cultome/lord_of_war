@@ -1,0 +1,27 @@
+<div class="event-list" id="event-list">
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <% events.each_with_index do |evt, idx| %>
+    <div class="collapsible">
+      <input id="collapsible<%= idx %>" type="radio" name="collapsible">
+      <label for="collapsible<%= idx %>" class="event">
+        <div><%= evt.title %></div>
+        <div class="event-details">
+          <a href="<%= evt.place_url %>"><%= evt.place_name %></a>
+          &nbsp;-&nbsp;
+          <%= format_event_date evt.datetime %>
+          <% if evt.created_by == account.user.id %>
+            <a hx-delete="/events/<%= evt.id %>" class="delete-btn" hx-target="#event-list" hx-swap="outerHTML">
+              <%= partial :trash_svg %>
+            </a>
+          <% end %>
+        </div>
+      </label>
+      <div class="collapsible-body">
+        <span><%= evt.desc %></span>
+      </div>
+    </div>
+  <% end %>
+</div>

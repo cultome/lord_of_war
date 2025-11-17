@@ -42,20 +42,7 @@
     <% end %>
   </div>
 
-  <div class="event-list">
-    <% events.each_with_index do |evt, idx| %>
-      <div class="collapsible">
-        <input id="collapsible<%= idx %>" type="radio" name="collapsible">
-        <label for="collapsible<%= idx %>" class="event">
-          <div><%= evt.title %></div>
-          <div><a href="<%= evt.place_url %>"><%= evt.place_name %></a> - <%= format_event_date evt.datetime %></div>
-        </label>
-        <div class="collapsible-body">
-          <span><%= evt.desc %></span>
-        </div>
-      </div>
-    <% end %>
-  </div>
+  <%= partial :event_list, events: events, account: account %>
 
   <div class="row flex-spaces child-borders">
     <label class="paper-btn btn-secondary-outline btn-block" for="modal-2">+ Evento</label>
