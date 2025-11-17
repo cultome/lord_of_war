@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
   password TEXT NOT NULL,
+  real_name TEXT,
   blood_type TEXT,
   emergency_contact_name TEXT,
   emergency_contact_phone TEXT

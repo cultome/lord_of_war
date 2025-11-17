@@ -17,8 +17,8 @@ module LordOfWar::Shared::Helpers
 
     if session.key? :user_id
       store = LordOfWar::Shared::Repository::Login.new
-      @user = store.find_user session[:user_id]
-      @account = LordOfWar::Login::Entity::Account.new user: @user
+      @account = store.find_account_by_user session[:user_id]
+      @user = @account.user
     else
       redirect to('/login')
     end

@@ -22,4 +22,12 @@ class LordOfWar::Profile::Repository::Profile
       .first
       .present?
   end
+
+  def update_emergency!(name, blood_type, contact_name, contact_phone, user_id)
+    DB
+      .execute(
+        'UPDATE users SET real_name = $1, blood_type = $2, emergency_contact_name = $3, emergency_contact_phone = $4 WHERE id = $5 RETURNING id', 
+        [name, blood_type, contact_name, contact_phone, user_id]
+      ).map { |rec| rec['id'] }.first.present?
+  end
 end

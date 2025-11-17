@@ -1,0 +1,59 @@
+<form hx-post="/update-emergency">
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <div class="row">
+    <div class="col col-6">
+      <div class="form-group in-tabs">
+        <label for="name">Nombre Real</label>
+        <input style="display: block" class="input-block" type="text" id="name" name="name" value="<%= account.emergency_information.name %>"/>
+      </div>
+    </div>
+
+    <div class="col col-6">
+      <div class="form-group in-tabs">
+        <label for="blood_type">Grupo Sanguineo</label>
+        <select class="input-block" id="blood_type" name="blood_type" value="<%= account.emergency_information.blood_type %>" />
+          <option value=""></option>
+          <% [
+            ["ap", "A+"],
+            ["al", "A–"],
+            ["bp", "B+"],
+            ["bl", "B–"],
+            ["abp", "AB+"],
+            ["abl", "AB–"],
+            ["op", "O+"],
+            ["ol", "O–"],
+          ].each do |key, label| %>
+          <option value="<%= key %>" <%= 'selected' if key == account.emergency_information.blood_type %>><%= label %></option>
+        <% end %>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <fieldset class="row form-group">
+    <legend>Contacto de emergencias</legend>
+
+    <div class="col col-6">
+      <div class="form-group in-tabs">
+        <label for="contact_name">Nombre del contacto</label>
+        <input class="input-block" type="text" id="contact_name" name="contact_name" value="<%= account.emergency_information.contact_name %>"/>
+      </div>
+    </div>
+
+    <div class="col col-6">
+      <div class="form-group in-tabs">
+        <label for="contact_phone">Telefono del contacto</label>
+        <input class="input-block" type="text" id="contact_phone" name="contact_phone" value="<%= account.emergency_information.contact_phone %>"/>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="row">
+    <div class="col col-12 in-tabs btn-grp">
+      <input style="width: 100%;" type="submit" value="Actualizar!">
+    </div>
+  </div>
+</form>

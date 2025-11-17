@@ -20,97 +20,18 @@
   </div>
 
   <div class="content" id="content2">
-    <form action="/update-emergency" method="POST">
-      <div class="row">
-        <div class="col col-6">
-          <div class="form-group in-tabs">
-            <label for="name">Nombre Real</label>
-            <input style="display: block" class="input-block" type="text" id="name" name="name"/>
-          </div>
-        </div>
-
-        <div class="col col-6">
-          <div class="form-group in-tabs">
-            <label for="bloodtype">Grupo Sanguineo</label>
-            <select class="input-block" id="bloodtype" name="bloodtype"/>
-              <option value=""></option>
-              <option value="ap">A+</option>
-              <option value="al">A–</option>
-              <option value="bp">B+</option>
-              <option value="bl">B–</option>
-              <option value="abp">AB+</option>
-              <option value="abl">AB–</option>
-              <option value="op">O+</option>
-              <option value="ol">O–</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <fieldset class="row form-group">
-        <legend>Contacto de emergencias</legend>
-
-        <div class="col col-6">
-          <div class="form-group in-tabs">
-            <label for="emergecycontact">Nombre del contacto</label>
-            <input class="input-block" type="text" id="emergecycontact" name="emergecycontact"/>
-          </div>
-        </div>
-
-        <div class="col col-6">
-          <div class="form-group in-tabs">
-            <label for="emergencyphone">Telefono del contacto</label>
-            <input class="input-block" type="text" id="emergencyphone" name="emergencyphone"/>
-          </div>
-        </div>
-      </fieldset>
-
-      <div class="row">
-        <div class="col col-12 in-tabs btn-grp">
-          <input style="width: 100%;" type="submit" value="Actualizar!">
-        </div>
-      </div>
-    </form>
+    <%= partial :emergency_form, account: account %>
   </div>
 
   <div class="content" id="content3">
-    <form action="/update-teams" method="POST">
-      <fieldset class="form-group">
-        <legend>En que equipos juegas?</legend>
-
-        <% teams.each do |team| %>
-          <label for="t<%= team.id %>" class="paper-check team-check">
-            <input type="checkbox" name="teams[]" id="t<%= team.id %>" value="<%= team.id %>">
-            <span>
-              <img src="<%= team.logo_url %>">
-              <% if team.page_url.blank? %>
-                <%= team.name %> [<%= team.state %>]
-              <% else %>
-                <a href="<%= team.page_url %>" target="_blank">
-                  <%= team.name %> [<%= team.state %>]
-                </a>
-              <% end %>
-            </span>
-          </label>
-        <% end %>
-      </fieldset>
-
-      <div class="row">
-        <div class="col col-12 in-tabs btn-grp">
-          <input style="width: 100%;" type="submit" value="Actualizar!">
-        </div>
-      </div>
-
-      <div class="team-notes">Eres el capitan de tu equipo?&nbsp;<a href="mailto:csoria@cultome.io">Escribenos</a>&nbsp;para reclamarlo</div>
-
-    </form>
+    <%= partial :teams_form, my_teams: my_teams, teams: teams, account: account %>
   </div>
 
   <div class="content" id="content4">
     <div class="text-muted" style="margin-bottom: 20px; text-align: center;">Comparte con la comunidad tu equipamiento favorito</div>
 
     <div class="my-gear">
-      <%= partial :soldier_svg%>
+      <%= partial :soldier_svg %>
       <div>
         Cara
         <ul>

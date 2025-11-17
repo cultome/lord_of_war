@@ -1,0 +1,33 @@
+<form hx-post="/update-teams">
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <fieldset class="form-group">
+    <legend>En que equipos juegas?</legend>
+
+    <% teams.each do |team| %>
+      <label for="t<%= team.id %>" class="paper-check team-check">
+        <input type="checkbox" name="teams[]" id="t<%= team.id %>" value="<%= team.id %>" <%= 'checked' if my_teams.include?(team.id) %>>
+        <span>
+          <img src="<%= team.logo_url %>">
+          <% if team.page_url.blank? %>
+            <%= team.name %> [<%= team.state %>]
+          <% else %>
+            <a href="<%= team.page_url %>" target="_blank">
+              <%= team.name %> [<%= team.state %>]
+            </a>
+          <% end %>
+        </span>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <div class="row">
+    <div class="col col-12 in-tabs btn-grp">
+      <input style="width: 100%;" type="submit" value="Actualizar!">
+    </div>
+  </div>
+
+  <div class="team-notes">Eres el capitan de tu equipo?&nbsp;<a href="mailto:csoria@cultome.io">Escribenos</a>&nbsp;para reclamarlo</div>
+</form>

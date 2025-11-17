@@ -1,14 +1,17 @@
-class LordOfWar::Profile::Service::DisplayProfile
+class LordOfWar::Profile::Service::UpdateTeams
   include LordOfWar::Shared::Service::Responses
   include LordOfWar::Shared::Utils
 
-  def initialize(user_id)
+  attr_accessor :teams, :user_id
+
+  def initialize(teams, user_id)
+    @teams = teams
     @user_id = user_id
   end
 
   def execute!
+    my_teams = teams_store.sync_teams @teams, @user_id
     teams = teams_store.get_teams
-    my_teams = teams_store.get_user_teams @user_id
 
     success({ teams: teams, my_teams: my_teams })
   end

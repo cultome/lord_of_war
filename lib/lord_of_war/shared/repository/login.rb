@@ -1,8 +1,9 @@
 class LordOfWar::Shared::Repository::Login
-  def find_user(user_id)
+  def find_account_by_user(user_id)
     DB
       .execute('SELECT * FROM users where id = $1', [user_id])
-      .map { |rec| LordOfWar::Login::Entity::User.parse_json rec }
-      .first
+      .map do |rec|
+        LordOfWar::Login::Entity::Account.parse_json rec
+      end.first
   end
 end
