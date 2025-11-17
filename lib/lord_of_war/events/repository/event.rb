@@ -17,7 +17,7 @@ class LordOfWar::Events::Repository::Event
       Time.now.iso8601,
     ]
 
-    @db.execute(query, params).map { |rec| rec['id'] }.first
+    DB.execute(query, params).map { |rec| rec['id'] }.first
   end
 
   def get_events(_user_id, month)
@@ -30,6 +30,6 @@ class LordOfWar::Events::Repository::Event
     dt_start = "#{month.strftime "%Y-%m-%d"}T00:00:00-06:00"
     dt_end = "#{month.next_month.strftime "%Y-%m-%d"}T00:00:00-06:00"
 
-    @db.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Event.parse_json rec }
+    DB.execute(query, [dt_start, dt_end]).map { |rec| LordOfWar::Events::Entity::Event.parse_json rec }
   end
 end

@@ -1,11 +1,11 @@
 module LordOfWar::Shared::Service::Responses
   class ServiceResponse
-    attr_accessor :error, :error_type, :value
+    attr_accessor :error, :alert_type, :value
 
-    def initialize(value, error, error_type)
+    def initialize(value, error, alert_type)
       @value = value
       @error = error
-      @error_type = error_type
+      @alert_type = alert_type
     end
 
     def success?
@@ -13,11 +13,11 @@ module LordOfWar::Shared::Service::Responses
     end
   end
 
-  def error(error, error_type: 'danger')
-    ServiceResponse.new nil, error, error_type
+  def error(error, alert_type: 'danger')
+    ServiceResponse.new nil, error, alert_type
   end
 
-  def success(value)
-    ServiceResponse.new value, nil, nil
+  def success(value, alert_type: 'secondary')
+    ServiceResponse.new value, nil, alert_type
   end
 end

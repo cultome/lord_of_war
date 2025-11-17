@@ -23,7 +23,7 @@ class LordOfWar::Login::Routes::Api < Sinatra::Base
 
       partial :login_form, alert_type: 'seconday', message: 'Validacion exitosa!'
     else
-      partial :login_form, alert_type: resp.error_type, message: resp.error
+      partial :login_form, alert_type: resp.alert_type, message: resp.error
     end
   end
 
