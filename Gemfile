@@ -13,3 +13,5 @@ gem 'rspec', '~> 3.0'
 gem 'rubocop', '~> 1.21'
 gem 'sinatra', '~> 4.2'
 gem 'sqlite3', '~> 2.8'
+
+gem "mini_magick", "~> 5.3"

@@ -25,6 +25,14 @@ Start API
 $ bundle exec rackup --port 4567 --server puma --host 0.0.0.0
 ```
 
+Process teams information
+
+```bash
+$ ./bin/scraper_teams scrap
+$ ./bin/scraper_teams images
+$ ./bin/scraper_teams gensql "74604fce-0953-4e87-93e5-e10e2b7389ff" | xsel --clipboard
+```
+
 ## Usage
 
 Enter `http://127.0.0.1:4567/`

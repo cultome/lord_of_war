@@ -23,6 +23,8 @@ GEM
     lint_roller (1.1.0)
     logger (1.7.0)
     method_source (1.1.0)
+    mini_magick (5.3.1)
+      logger
     mustermann (3.0.4)
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.5)
@@ -113,6 +115,7 @@ DEPENDENCIES
   bcrypt (~> 3.1)
   irb
   lord_of_war!
+  mini_magick (~> 5.3)
   pry (~> 0.15.2)
   puma (~> 7.1)
   rack (~> 3.2)

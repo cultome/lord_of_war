@@ -2,15 +2,38 @@
 
 require 'httparty'
 require 'json'
+require 'mini_magick'
 require 'nokogiri'
 require 'pry'
 require 'securerandom'
 require 'thor'
 
+class String
+  def as_img_path
+    downcase.gsub(/\s/, '_').gsub(/\W/, '').gsub(/_{2,}/, '_')
+  end
+end
+
 class ScraperTeams < Thor
   DATA_FOLDER = "#{File.dirname __FILE__}/../data"
 
   BASE_URL = 'https://www.comunidadairsoftmexico.org/consulta.php?estado='
+
+  desc 'images', 'Process team images'
+  def images
+    Dir
+      .children('./public/teams/originals')
+      .each do |file|
+        print '.'
+
+        image = MiniMagick::Image.open "./public/teams/originals/#{file}"
+        image.resize '36x36'
+
+        extname = file.split('.').last
+        resized_img = file.gsub extname, "_36x36.#{extname}"
+        image.write "./public/teams/#{resized_img}"
+      end
+  end
 
   desc 'scrap', 'Scrap teams information'
   def scrap
@@ -62,29 +85,36 @@ class ScraperTeams < Thor
 
       doc = Nokogiri::HTML res.body
       doc.css('div a').zip(doc.css('div img')).map do |a, img|
+        next if a.text.empty?
+
+        extname = img['src'].split('.').last
+        filename = "#{a.text.as_img_path}_36x36.#{extname}"
+
+        `wget --quiet #{img['src']} --output-document ./public/teams/#{filename}`
+
         {
           name: a.text,
           url: a['href'],
-          img_url: img['src'],
+          img_url: "/teams/#{filename}",
           state: state,
         }
       end
     end
 
-    File.write "#{DATA_FOLDER}/teams.json", teams.to_json
+    File.write "#{DATA_FOLDER}/teams.json", teams.compact.to_json
 
     puts '[+] Done!'
   end
 
-  desc 'gensql', 'Generate SQL insert for the seeds'
-  def gensql
+  desc 'gensql OWNER_ID', 'Generate SQL insert for the seeds'
+  def gensql(owner_id)
     recs = JSON.parse File.read("#{DATA_FOLDER}/teams.json")
 
     queries = recs.map do |r|
-      "('#{SecureRandom.uuid}', '#{r["name"]}', '#{r["state"]}', '#{r["url"]}', '#{r["img_url"]}')"
+      "('#{SecureRandom.uuid}', '#{owner_id}', '#{r["name"].gsub "'", "\\'"}', '#{r["state"]}', '#{r["url"]}', '#{r["img_url"]}')"
     end
 
-    puts "INSERT INTO teams(id, name, state, page_url, logo_url) VALUES\n#{queries.join ",\n"}"
+    puts "INSERT INTO teams(id, owner_id, name, state, page_url, logo_url) VALUES\n#{queries.join ",\n"};"
   end
 end
 
