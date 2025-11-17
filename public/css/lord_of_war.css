@@ -396,11 +396,17 @@ footer a {
 }
 
 .equipment {
+  width: 100%;
   display: flex;
   justify-content: space-between;
 }
 
+.equipment .equipment-area {
+  width: 50%;
+}
+
 .equipment svg {
+  width: 50%;
   height: 100%;
 }
 
@@ -615,4 +621,21 @@ label.paper-btn {
 .team-notes {
   display: flex;
   justify-content: center;
+}
+
+.equipment-listing {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.equipment-listing svg {
+  width: 24px;
+}
+
+.equipment-listing a {
+  justify-content: flex-start;
+  display: flex;
+  text-decoration: none;
+  background: none;
 }

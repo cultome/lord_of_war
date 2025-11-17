@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Equipment
 
 CREATE TABLE IF NOT EXISTS equipment (
+  id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   kind TEXT,
   name TEXT,

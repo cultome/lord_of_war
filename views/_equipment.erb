@@ -3,13 +3,31 @@
 
   <div class="equipment-area">
     <% if defined?(kind) %>
-      <div class="kind"><%= kind %></div>
+      <h3 class="kind"><%= kind %></h3>
       <ul class="equipment-list">
-        <% equipment.each do |eq| %>
-          <li><a href="<%= eq.url %>"><%= eq.name %></a></li>
+        <% equipments.each do |eq| %>
+          <li class="equipment-listing">
+            <a href="<%= eq.url %>" style="width: 100%; margin-left: 10px;"><%= eq.name %></a>
+            <a href="#" hx-delete="/equipment/<%= eq.id %>">
+              <%= partial :trash_svg %>
+            </a>
+          </li>
         <% end %>
       </ul>
-      <button style="width: 100%; padding: 5px;">+</button>
+      <label class="paper-btn btn-block btn-secondary-outline" for="modal-2">+ Equipo</label>
     <% end %>
   </div>
+
+  <% if defined?(kind) %>
+    <input class="modal-state" id="modal-2" type="checkbox">
+    <div class="modal">
+      <label class="modal-bg" for="modal-2"></label>
+      <div class="border modal-body" style="width: 50%;">
+        <label class="btn-close" for="modal-2">X</label>
+        <h4 class="modal-title">Agrega equipo</h4>
+        <h5 class="modal-subtitle"><%= kind %></h5>
+        <%= partial :equipment_form, kind_id: kind_id, equipment: equipment %>
+      </div>
+    </div>
+  <% end %>
 </div>

@@ -1,14 +1,14 @@
 <div class="row flex-spaces tabs">
-  <input id="tab1" type="radio" name="tabs">
+  <input id="tab1" type="radio" name="tabs" <%= 'checked' if current_tab == 'account' %>>
   <label for="tab1">Mi cuenta</label>
 
-  <input id="tab2" type="radio" name="tabs">
+  <input id="tab2" type="radio" name="tabs" <%= 'checked' if current_tab == 'emergency' %>>
   <label for="tab2">Emergencias</label>
 
-  <input id="tab3" type="radio" name="tabs">
+  <input id="tab3" type="radio" name="tabs" <%= 'checked' if current_tab == 'teams' %>>
   <label for="tab3">Equipo</label>
 
-  <input id="tab4" type="radio" name="tabs" checked>
+  <input id="tab4" type="radio" name="tabs" <%= 'checked' if current_tab == 'equipment' %>>
   <label for="tab4">Armamento</label>
 
   <div class="content" id="content1">

@@ -18,6 +18,7 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
           account: @account,
           teams: res.value[:teams],
           my_teams: res.value[:my_teams],
+          current_tab: params.fetch('tab', 'equipment'),
         }
       )
     end
@@ -87,7 +88,58 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
   end
 
   get '/equipment/:kind' do
-    kind_label = {
+    res = LordOfWar::Profile::Service::DisplayEquipment.new(
+      params['kind'],
+      @account.user.id
+    ).execute!
+
+    partial(
+      :equipment,
+      {
+        kind: kind_labels.fetch(params[:kind], params[:kind]), 
+        kind_id: params[:kind], 
+        equipments: res.value, 
+        equipment: LordOfWar::Profile::Entity::Equipment.empty
+      }
+    )
+  end
+
+  post '/equipment/:kind' do
+    res = LordOfWar::Profile::Service::AddEquipment.new(
+      params['kind'],
+      params['name'],
+      params['url'],
+      @account.user.id
+    ).execute!
+
+    label = kind_labels.fetch(params[:kind], params[:kind])
+
+    if res.success?
+      query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+      response.headers['HX-Redirect'] = "/profile?tab=equipment&#{query_string}"
+
+      partial :equipment_form, kind: label, kind_id: params[:kind], equipment: res.value
+    else
+      partial :equipment_form, kind: label, kind_id: params[:kind], equipment: res.value, message: res.error
+    end
+  end
+
+  delete '/equipment/:id' do
+    res = LordOfWar::Profile::Service::RemoveEquipment.new(
+      params['id'],
+      @account.user.id
+    ).execute!
+
+    query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
+    response.headers['HX-Redirect'] = "/profile?tab=equipment&#{query_string}"
+
+  partial :equipment_form, kind: '', kind_id: params[:kind], equipment: LordOfWar::Profile::Entity::Equipment.empty
+  end
+
+  private
+
+  def kind_labels
+    @kind_labels ||= {
       'hands' => 'Manos',
       'primary' => 'Replica Primaria',
       'secondary' => 'Replica Secundaria',
@@ -98,13 +150,6 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
       'chest' => 'Pecho',
       'helmet' => 'Casco',
       'face' => 'Cara',
-    }.fetch(params[:kind], params[:kind])
-
-    res = LordOfWar::Profile::Service::DisplayEquipment.new(
-      params['kind'],
-      @account.user.id
-    ).execute!
-
-    partial :equipment, kind: kind_label, equipment: res.value
+    }
   end
 end

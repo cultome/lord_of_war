@@ -1,0 +1,22 @@
+<form class="modal-text in-tabs" hx-post="/equipment/<%= kind_id %>">
+  <% if defined?(alert_type) %>
+    <div class="alert alert-<%= alert_type %>"><%= message %></div>
+  <% end %>
+
+  <div class="row">
+    <div class="col col-12 form-group">
+      <label for="name">Nombre</label>
+      <input class="input-block" type="text" id="name" name="name" value="<%= equipment.name %>">
+    </div>
+
+    <div class="col col-12 form-group">
+      <label for="url">URL</label>
+      <input class="input-block" type="text" id="url" name="url" value="<%= equipment.url %>">
+    </div>
+  </div>
+
+  <div class="btn-grp flex-spaces">
+    <button for="modal-2" class="margin btn-block paper-btn btn-primary-outline">Cerrar</button>
+    <button type="submit" class="btn-block paper-btn btn-secondary-outline">Agregar!</button>
+  </div>
+</form>
