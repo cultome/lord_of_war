@@ -2,6 +2,8 @@ class LordOfWar::Shared::Repository::Catalogs
   def category_labels
     @category_labels ||= DB
                          .execute('SELECT id, label_es FROM categories ORDER BY menu_order')
-                         .each_with_object({}) { |rec, acc| acc[rec['id']] = rec['label_es'] }
+                         .each_with_object({}) do |rec, acc|
+      acc[rec['id']] = rec['label_es'] unless rec['label_es'].blank?
+    end
   end
 end
