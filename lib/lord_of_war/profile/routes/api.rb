@@ -1,6 +1,8 @@
 class LordOfWar::Profile::Routes::Api < Sinatra::Base
   helpers LordOfWar::Shared::Helpers
 
+  set :views, VIEWS_FOLDER
+
   include BCrypt
 
   before do
@@ -8,16 +10,18 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
   end
 
   get '/profile' do
-    teams = store.get_teams
+    res = LordOfWar::Profile::Service::DisplayProfile.new.execute!
 
-    erb(
-      :profile,
-      locals: {
-        section_title: 'Mi perfil',
-        account: @account,
-        teams: teams,
-      }
-    )
+    if res.success?
+      erb(
+        :profile,
+        locals: {
+          section_title: 'Mi perfil',
+          account: @account,
+          teams: res.value,
+        }
+      )
+    end
   end
 
   post '/update-account' do

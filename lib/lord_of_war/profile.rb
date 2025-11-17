@@ -4,3 +4,4 @@ end
 require_relative './profile/routes'
 require_relative './profile/entity'
 require_relative './profile/repository'
+require_relative './profile/service'

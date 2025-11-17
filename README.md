@@ -13,14 +13,16 @@ bundle install
 Initialize DB and seeds
 
 ```bash
-sqlite3 low.db < sql/create_schema.sql
-sqlite3 low.db < sql/seeds.sql
+$ sqlite3 low.db < sql/create_schema.sql
+$ sqlite3 low.db < sql/seeds.sql
+$ ./bin/scraper_veta_airsoft upload data/vetaairsoft/products_clean.json
+$ sqlite3 low.db < sql/test.sql
 ```
 
 Start API
 
 ```bash
-bundle exec rackup -p 4567
+$ bundle exec rackup --port 4567 --server puma --host 0.0.0.0
 ```
 
 ## Usage
