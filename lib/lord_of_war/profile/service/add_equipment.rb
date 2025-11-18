@@ -12,9 +12,7 @@ class LordOfWar::Profile::Service::AddEquipment
   end
 
   def execute!
-    preview_img_url = nil
-
-    preview_img_url = extract_preview_image url if valid_url? url
+    preview_img_url = valid_url?(url) ? extract_preview_image(url) : nil
 
     equipment = equipment_store.add_equipment kind, name, url, user_id, preview_img_url
     success equipment

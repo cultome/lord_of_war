@@ -1,4 +1,4 @@
-module LordOfWar::Utils
+module Utils
   def fetch_or_create(table, value, db)
     return nil if value.blank?
 

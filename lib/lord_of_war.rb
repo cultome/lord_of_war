@@ -8,6 +8,7 @@ require 'pry'
 require 'securerandom'
 require 'sinatra/base'
 require 'sqlite3'
+require 'uri'
 require 'time'
 
 require_relative 'lord_of_war/version'

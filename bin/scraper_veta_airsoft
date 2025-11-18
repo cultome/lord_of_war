@@ -1,22 +1,19 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift './lib'
-
 require 'brotli'
 require 'csv'
 require 'httparty'
 require 'json'
-require 'lord_of_war'
-require 'lord_of_war/utils'
 require 'nokogiri'
 require 'pry'
 require 'securerandom'
 require 'set'
 require 'sqlite3'
 require 'thor'
+require_relative 'utils'
 
 class VetaAirsoft < Thor
-  include LordOfWar::Utils
+  include Utils
 
   DATA_FOLDER = "#{File.dirname __FILE__}/../data/vetaairsoft"
 
