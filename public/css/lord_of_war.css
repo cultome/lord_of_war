@@ -625,6 +625,18 @@ label.paper-btn {
 
 .equipment-listing {
   display: flex;
+  flex-direction: column;
+  padding: 10px 0;
+}
+
+.equipment-listing img {
+  width: 120px;
+  border: none;
+  padding: 0 10px;
+}
+
+.equipment-listing .desc-section {
+  display: flex;
   justify-content: space-between;
   align-items: center;
 }
@@ -642,6 +654,10 @@ a.delete-btn,
   background: none;
 }
 
+ul li.equipment-listing::before {
+  content: none;
+}
+
 a.delete-btn {
   margin-left: 10px;
 }
@@ -649,4 +665,18 @@ a.delete-btn {
 .event-details {
   display: flex;
   justify-content: space-between;
+}
+
+.title-separator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.title-separator h4 {
+  margin: 0;
+}
+
+.title-separator hr {
+  margin: 0 20px;
 }

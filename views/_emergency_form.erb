@@ -3,7 +3,7 @@
     <div class="alert alert-<%= alert_type %>"><%= message %></div>
   <% end %>
 
-  <div class="row">
+  <div class="row" style="margin-bottom: 0;">
     <div class="col col-6">
       <div class="form-group in-tabs">
         <label for="name">Nombre Real</label>
@@ -33,9 +33,7 @@
     </div>
   </div>
 
-  <fieldset class="row form-group">
-    <legend>Contacto de emergencias</legend>
-
+  <div class="row">
     <div class="col col-6">
       <div class="form-group in-tabs">
         <label for="contact_name">Nombre del contacto</label>
@@ -49,7 +47,7 @@
         <input class="input-block" type="text" id="contact_phone" name="contact_phone" value="<%= account.emergency_information.contact_phone %>"/>
       </div>
     </div>
-  </fieldset>
+  </div>
 
   <div class="row">
     <div class="col col-12 in-tabs btn-grp">

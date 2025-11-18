@@ -96,23 +96,24 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
     partial(
       :equipment,
       {
-        kind: kind_labels.fetch(params[:kind], params[:kind]), 
-        kind_id: params[:kind], 
-        equipments: res.value, 
-        equipment: LordOfWar::Profile::Entity::Equipment.empty
+        kind: kind_labels.fetch(params[:kind], params[:kind]),
+        kind_id: params[:kind],
+        equipments: res.value,
+        equipment: LordOfWar::Profile::Entity::Equipment.empty,
       }
     )
   end
 
+  # Add a piece of equipment of a given kind for the current user
   post '/equipment/:kind' do
+    label = kind_labels.fetch params['kind']
+
     res = LordOfWar::Profile::Service::AddEquipment.new(
       params['kind'],
       params['name'],
       params['url'],
       @account.user.id
     ).execute!
-
-    label = kind_labels.fetch(params[:kind], params[:kind])
 
     if res.success?
       query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
@@ -125,7 +126,7 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
   end
 
   delete '/equipment/:id' do
-    res = LordOfWar::Profile::Service::RemoveEquipment.new(
+    LordOfWar::Profile::Service::RemoveEquipment.new(
       params['id'],
       @account.user.id
     ).execute!
@@ -133,7 +134,7 @@ class LordOfWar::Profile::Routes::Api < Sinatra::Base
     query_string = request.referer.include?('?') ? request.referer.split('?').last : ''
     response.headers['HX-Redirect'] = "/profile?tab=equipment&#{query_string}"
 
-  partial :equipment_form, kind: '', kind_id: params[:kind], equipment: LordOfWar::Profile::Entity::Equipment.empty
+    partial :equipment_form, kind: '', kind_id: params[:kind], equipment: LordOfWar::Profile::Entity::Equipment.empty
   end
 
   private

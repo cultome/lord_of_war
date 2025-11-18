@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rerun "bundle exec rackup --port 4567 --server puma --host 0.0.0.0"

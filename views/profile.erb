@@ -12,10 +12,11 @@
   <label for="tab4">Armamento</label>
 
   <div class="content" id="content1">
+    <%= partial :title_separator, title: 'Cambiar nombre de usuario' %>
     <%= partial :account_form, account: account %>
-    <hr />
+    <%= partial :title_separator, title: 'Cambiar contraseña' %>
     <%= partial :password_form %>
-    <hr />
+    <%= partial :title_separator, title: 'Salir' %>
     <a href="/logout" class="paper-btn btn-danger-outline btn-block logout-btn">Cerrar session</a>
   </div>
 

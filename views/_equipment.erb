@@ -7,10 +7,15 @@
       <ul class="equipment-list">
         <% equipments.each do |eq| %>
           <li class="equipment-listing">
-            <a href="<%= eq.url %>" style="width: 100%; margin-left: 10px;"><%= eq.name %></a>
-            <a href="#" hx-delete="/equipment/<%= eq.id %>">
-              <%= partial :trash_svg %>
-            </a>
+            <div class="desc-section">
+              <a href="<%= eq.url %>" style="width: 100%; margin-left: 10px;"><%= eq.name %></a>
+              <% if eq.preview_img_url %>
+                <img src="<%= eq.preview_img_url %>">
+              <% end %>
+              <a href="#" hx-delete="/equipment/<%= eq.id %>">
+                <%= partial :trash_svg %>
+              </a>
+            </div>
           </li>
         <% end %>
       </ul>

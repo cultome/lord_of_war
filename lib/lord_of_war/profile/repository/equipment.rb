@@ -5,11 +5,11 @@ class LordOfWar::Profile::Repository::Equipment
       .map { |rec| LordOfWar::Profile::Entity::Equipment.parse_json rec }
   end
 
-  def add_equipment(kind, name, url, user_id)
+  def add_equipment(kind, name, url, user_id, preview_img_url)
     DB
       .execute(
-        'INSERT INTO equipment(id, user_id, kind, name, url) VALUES ($1, $2, $3, $4, $5) RETURNING *', 
-        [SecureRandom.uuid, user_id, kind, name, url]
+        'INSERT INTO equipment(id, user_id, kind, name, url, preview_img_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [SecureRandom.uuid, user_id, kind, name, url, preview_img_url]
       )
       .map { |rec| LordOfWar::Profile::Entity::Equipment.parse_json rec }
       .first

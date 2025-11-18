@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS equipment (
   kind TEXT,
   name TEXT,
   url TEXT,
+  preview_img_url TEXT,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
