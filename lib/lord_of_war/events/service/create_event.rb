@@ -14,6 +14,8 @@ class LordOfWar::Events::Service::CreateEvent
   end
 
   def execute!
+    return error 'La direccion del lugar es invalida' unless valid_url? place_url
+
     evt = LordOfWar::Events::Entity::Event.new(
       title,
       datetime,
@@ -26,12 +28,12 @@ class LordOfWar::Events::Service::CreateEvent
     new_event_id = events_store.create_event evt
 
     if new_event_id.nil?
-      res = error('Ocurrio un error al crear el evento')
+      res = error 'Ocurrio un error al crear el evento'
       res.value = evt
 
       res
     else
-      success(evt)
+      success evt
     end
   end
 

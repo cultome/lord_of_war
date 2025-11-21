@@ -70,7 +70,14 @@ class LordOfWar::Catalog::Entity::Product
   end
 
   def list_img
-    img.first || '/img/noproduct.png'
+    img_url = img.first || '/img/noproduct.png'
+    method = 'display'
+    width = '0'
+    height = '200'
+    operation = 'resize'
+    format = 'webp'
+
+    "http://localhost:3001/#{method}?url=#{img_url}&w=#{width}&h=#{height}&upscale=0&op=#{operation}&fmt=#{format}"
   end
 
   def license

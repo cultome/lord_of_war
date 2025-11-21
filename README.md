@@ -2,6 +2,10 @@
 
 Little experiment for an airsoft community hub
 
+## TODO
+
+- Validate request parameters
+
 ## Installation
 
 Install gems
