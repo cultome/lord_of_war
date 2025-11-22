@@ -6,9 +6,11 @@ require 'brotli'
 require 'csv'
 require 'httparty'
 require 'json'
+require 'lord_of_war/monkeypatch'
 require 'nokogiri'
 require 'pry'
 require 'set'
+require 'sqlite3'
 require 'thor'
 require_relative 'utils'
 
@@ -50,7 +52,7 @@ class AireSuave < Thor
       gearbox_id = fetch_or_create 'gearboxes', rec['gearbox'], db
       hop_up_id = fetch_or_create 'hop_ups', rec['hop_up'], db
       inner_barrel_id = fetch_or_create 'inner_barrels', rec['inner_barrel'], db
-      magazine_id = fetch_or_create 'magazines', rec['magazine', 'compabitility']&.join(', '), db
+      magazine_id = fetch_or_create 'magazines', rec.dig('magazine', 'compabitility')&.join(', '), db
       motor_id = fetch_or_create 'motors', rec['motor'], db
       # outer_barrel_id = fetch_or_create 'outer_barrels', rec['outer_barrel'], db
       speed_id = fetch_or_create 'speeds', rec['speed'], db
@@ -81,7 +83,7 @@ class AireSuave < Thor
                          inner_barrel_id,
                          magazine_id,
                          motor_id,
-                         outer_barrel_id,
+                         nil,
                          speed_id,
                          system_id,
                          thread_direction_id,
@@ -105,7 +107,7 @@ class AireSuave < Thor
                          inner_barrel_id,
                          magazine_id,
                          motor_id,
-                         outer_barrel_id,
+                         nil,
                          speed_id,
                          system_id,
                          thread_direction_id,
@@ -113,13 +115,13 @@ class AireSuave < Thor
                      ).map { |row| row['id'] }.first
                    end
 
-      (rec['battery'] || []).each do |val|
-        val['capacity'].product(val['type']).each do |cap, tp|
-          calc_val = "#{cap} #{tp}"
+      caps = (rec['battery'] || {}).fetch('capacity', [])
+      tps = (rec['battery'] || {}).fetch('type', [])
+      caps.product(tps).each do |cap, tp|
+        calc_val = "#{cap} #{tp}"
 
-          battery_id = fetch_or_create 'batteries', calc_val, db
-          create_product_relation_if_required 'products_batteries', 'battery_id', product_id, battery_id, db
-        end
+        battery_id = fetch_or_create 'batteries', calc_val, db
+        create_product_relation_if_required 'products_batteries', 'battery_id', product_id, battery_id, db
       end
 
       (rec['firing_mode'] || []).each do |val|
@@ -127,7 +129,8 @@ class AireSuave < Thor
         create_product_relation_if_required 'products_firing_modes', 'firing_mode_id', product_id, firing_mode_id, db
       end
 
-      (rec['img'] || []).each do |val|
+      # TODO: remove this hack
+      ((rec['img'] && [rec['img']]) || []).each do |val|
         img_id = fetch_or_create 'imgs', val, db
         create_product_relation_if_required 'products_imgs', 'img_id', product_id, img_id, db
       end
@@ -142,7 +145,8 @@ class AireSuave < Thor
         create_product_relation_if_required 'products_makers', 'maker_id', product_id, maker_id, db
       end
 
-      (rec['type'] || []).each do |val|
+      # TODO: remove this hack
+      ((rec['type'] && [rec['type']]) || []).each do |val|
         type_id = fetch_or_create 'types', val, db
         create_product_relation_if_required 'products_types', 'type_id', product_id, type_id, db
       end
@@ -200,9 +204,10 @@ class AireSuave < Thor
                       when 'thread_direction' then clean_thread_direction value
                       when 'type' then clean_type value
                       when 'voltage' then clean_voltage value
-                      when 'price' then clean_price value
-                      else 
-                        binding.pry unless value.is_a? String
+                      when 'url'
+                        acc2['id'] = Digest::SHA256.hexdigest(value)[0, 16]
+                        value
+                      else
                         value
                       end
 
@@ -268,7 +273,7 @@ class AireSuave < Thor
               amount: price.text.strip.gsub(/[^0-9.]+/, '').to_f,
               currency: 'MXN',
             },
-            img: image.attr('src').text,
+            img: [image.attr('src').text],
           }
         end
 
@@ -303,6 +308,9 @@ class AireSuave < Thor
 
           acc[props_dict.fetch(clean_prop_name(prop), "*#{prop}*")] = value
         end
+
+        # Get the images!
+        binding.pry
 
         product.merge! props
       end
