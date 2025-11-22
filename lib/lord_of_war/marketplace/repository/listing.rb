@@ -63,7 +63,7 @@ class LordOfWar::Marketplace::Repository::Listing
 
     unless filters.search_empty?
       clauses << "l.search_corpus LIKE $#{ph_idx}"
-      params << "%#{filters.search}%"
+      params << "%#{filters.search.gsub " ", "%"}%"
       ph_idx += 1
     end
 

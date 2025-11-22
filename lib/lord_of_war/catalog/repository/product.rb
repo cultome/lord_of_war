@@ -6,7 +6,7 @@ class LordOfWar::Catalog::Repository::Product
 
     unless filters.search_empty?
       clauses << "p.search_corpus LIKE $#{ph_idx}"
-      params << "%#{filters.search}%"
+      params << "%#{filters.search.gsub " ", "%"}%"
       ph_idx += 1
     end
 
@@ -84,8 +84,6 @@ class LordOfWar::Catalog::Repository::Product
       p.types = types[p.id]
     end
   end
-
-  private
 
   def products_relation(product_ids, plural, singular)
     phs = product_ids.map.with_index { |_, idx| "$#{idx + 1}" }.join(',')

@@ -287,19 +287,10 @@ class VetaAirsoft < Thor
 
       # Add a search corpus to optimize text query
       clean_products.each do |p|
-        search_corpus = p
-                        .slice(*%w[title gearbox magazine maker license motor speed system firing_mode description])
-                        .reduce('') do |acc, val|
-          if val.is_a? String
-            acc + " #{val}"
-          elsif val.is_a? Array
-            acc + " #{val.join " "}"
-          elsif val.is_a? Hash
-            acc + " #{val.values.join " "}"
-          end
-        end
-
-        p['search_corpus'] = search_corpus.downcase.tr 'áéíóú', 'aeiou'
+        p['search_corpus'] = generate_search_corpus(
+          p, 
+          %w[title gearbox magazine maker license motor speed system firing_mode description]
+        )
       end
 
       File.write "#{DATA_FOLDER}/products_clean.json", clean_products.to_json

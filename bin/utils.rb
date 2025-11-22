@@ -217,6 +217,20 @@ module Utils
     props
   end
 
+  def generate_search_corpus(rec, values)
+    search_corpus = rec.slice(*values).reduce('') do |acc, val|
+      if val.is_a? String
+        acc + " #{val}"
+      elsif val.is_a? Array
+        acc + " #{val.join " "}"
+      elsif val.is_a? Hash
+        acc + " #{val.values.join " "}"
+      end
+    end
+
+    search_corpus.downcase.tr('áéíóú', 'aeiou').strip
+  end
+
   def licenses
     [
       'Barrett',
