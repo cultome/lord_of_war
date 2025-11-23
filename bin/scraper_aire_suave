@@ -129,8 +129,7 @@ class AireSuave < Thor
         create_product_relation_if_required 'products_firing_modes', 'firing_mode_id', product_id, firing_mode_id, db
       end
 
-      # TODO: remove this hack
-      ((rec['img'] && [rec['img']]) || []).each do |val|
+      (rec['img'] || []).each do |val|
         img_id = fetch_or_create 'imgs', val, db
         create_product_relation_if_required 'products_imgs', 'img_id', product_id, img_id, db
       end
@@ -171,7 +170,7 @@ class AireSuave < Thor
         unless allowed_keys.include? key
           unless error_reports.key? key
             error_reports[key] = true
-            puts "[-] Key [#{key}] not allowed"
+            # puts "[-] Key [#{key}] not allowed"
           end
           next
         end
@@ -204,21 +203,28 @@ class AireSuave < Thor
                       when 'thread_direction' then clean_thread_direction value
                       when 'type' then clean_type value
                       when 'voltage' then clean_voltage value
-                      when 'url'
-                        acc2['id'] = Digest::SHA256.hexdigest(value)[0, 16]
-                        value
+                      when 'title'
+                        cv = clean_title value
+                        prod[key] = cv
+
+                        acc2.merge! extract_title_info cv
+
+                        overwrite_category_by_url! acc2, prod
+
+                        acc2['search_corpus'] = generate_search_corpus(
+                          prod, 
+                          %w[title battery bb charger diameter dimensions fps_range gas gearbox hardness hop_up inner_barrel magazine magnification materials motor range speed system thread_direction type voltage]
+                        )
+
+                        cv
                       else
                         value
                       end
 
         acc2[key] = clean_value
-
-        next unless key == 'title'
-
-        acc2['search_corpus'] = generate_search_corpus prod, %w[title battery bb charger diameter dimensions fps_range gas gearbox hardness hop_up inner_barrel magazine magnification materials motor range speed system thread_direction type voltage]
-
-        acc2.merge! extract_title_info(value)
       end
+    rescue StandardError => e
+      puts "\n[-] Error cleaning [#{prod}]: #{e}"
     end.values
 
     # audit_props clean_products
@@ -227,6 +233,7 @@ class AireSuave < Thor
 
     puts '[+] Done!'
   end
+
 
   desc 'scrap', 'Scrap site'
   def scrap
@@ -240,16 +247,30 @@ class AireSuave < Thor
       'https://airesuave.com.mx/categoria-producto/ofertas/',
     ].each do |url|
       prods = scrap_product_list url
-      scrap_details prods
+      scrap_details prods, url
 
       name = url.split('/').last.gsub '-', '_'
-      File.write "#{DATA_FOLDER}/#{name}.json", prods.to_json
+      File.write "#{DATA_FOLDER}/aire_suave_#{name}.json", prods.to_json
     end
 
     puts '[+] Done!'
   end
 
   no_commands do
+    def overwrite_category_by_url!(acc, prod)
+      if prod['section_url'].include? '/replicas/'
+        acc['category'] = 'replica'
+      elsif prod['section_url'].include? '/accesorios/'
+        acc['category'] = 'accessories'
+      elsif prod['section_url'].include? '/equipo-tactico/'
+        acc['category'] = 'gear'
+      elsif prod['section_url'].include? '/bbs-y-gas/'
+        acc['category'] = 'consumable'
+      end
+    rescue StandardError => e
+      puts "Unable to overwrite category for [#{prod.inspect}]"
+    end
+
     def scrap_product_list(page_url)
       name = page_url.split('/').last.gsub '-', '_'
       puts "[*] Scraping product list [#{name}]..."
@@ -264,18 +285,24 @@ class AireSuave < Thor
           image = product.css 'div.ope-woo-card-header img.attachment-woocommerce_thumbnail'
           product_link = product.css 'a.woocommerce-LoopProduct-link'
           title = product_link.css 'div.ope-woo-card-content-title'
-          price = product_link.css 'div.ope-woo-card-content-price'
+          price = product_link.css("span.woocommerce-Price-amount.amount").last
+          url = product_link.attr('href').value
 
           {
-            url: product_link.attr('href').value,
-            title: title.text.strip,
-            price: {
-              amount: price.text.strip.gsub(/[^0-9.]+/, '').to_f,
-              currency: 'MXN',
+            'id' => Digest::SHA256.hexdigest(url)[0, 16],
+            'url' => url,
+            'section_url' => page_url,
+            'title' => title.text.strip,
+            'price' => {
+              'amount' => price.text.strip.gsub(/[^0-9.]+/, '').to_f,
+              'currency' => 'MXN',
             },
-            img: [image.attr('src').text],
+            'img' => [image.attr('src').text],
           }
-        end
+        rescue StandardError => e
+          "[-] Unable to fetch [#{product}]: #{e}"
+          nil
+        end.compact
 
         products.concat page_products
 
@@ -291,28 +318,27 @@ class AireSuave < Thor
       products
     end
 
-    def scrap_details(products)
+    def scrap_details(products, section_url)
       puts '[*] Scraping product details...'
 
       products.each do |product|
-        doc = fetch_page product[:url]
+        doc = fetch_page product['url']
 
         next if doc.nil?
 
         props = doc.css('div.entry-content p')
-                   .map(&:text)
-                   .flat_map { |txt| txt.split("\n") }
-                   .select { |txt| txt.include? ':' }
-                   .each_with_object({}) do |txt, acc|
-          prop, value = txt.gsub(' ', ' ').split(':').map(&:strip)
+          .map(&:text)
+          .flat_map { |txt| txt.split("\n") }
+          .select { |txt| txt.include? ':' }
+          .each_with_object({}) do |txt, acc|
+            prop, value = txt.gsub(' ', ' ').split(':').map(&:strip)
 
-          acc[props_dict.fetch(clean_prop_name(prop), "*#{prop}*")] = value
-        end
+            acc[props_dict.fetch(clean_prop_name(prop), "*#{prop}*")] = value
+          end
 
-        # Get the images!
-        binding.pry
+        gallery = doc.css("div.woocommerce-product-gallery img").map { |i| i.attr('src') }
 
-        product.merge! props
+        product.merge! props.merge('img' => product['img'] + gallery)
       end
     end
 
@@ -351,32 +377,33 @@ class AireSuave < Thor
 
     def allowed_keys
       @allowed_keys ||= %w[
-        url
-        title
-        price
-        img
-        battery
-        bb
-        charger
-        diameter
-        dimensions
-        fps_range
-        gas
-        gearbox
-        hardness
-        hop_up
-        inner_barrel
-        magazine
-        magnification
-        materials
-        motor
-        range
-        speed
-        system
-        thread_direction
-        type
-        voltage
-      ]
+      id
+      url
+      title
+      price
+      img
+      battery
+      bb
+      charger
+      diameter
+      dimensions
+      fps_range
+      gas
+      gearbox
+      hardness
+      hop_up
+      inner_barrel
+      magazine
+      magnification
+      materials
+      motor
+      range
+      speed
+      system
+      thread_direction
+      type
+      voltage
+    ]
     end
 
     def props_dict
@@ -746,25 +773,25 @@ class AireSuave < Thor
     BUTTERFLY_BATTERIES = %w[butterfly mariposa]
     def clean_battery(value)
       capacity = value
-                 .scan(/([\d,.]+\s*V\s*(\d+\s*mAh)?)/i)
-                 .map(&:first)
-                 .compact
-                 .uniq
-                 .map { |v| v.strip.tr 'v,', 'V.' }
+        .scan(/([\d,.]+\s*V\s*(\d+\s*mAh)?)/i)
+        .map(&:first)
+        .compact
+        .uniq
+        .map { |v| v.strip.tr 'v,', 'V.' }
 
       amount = value
-               .scan(/(\d+x\s*(AA|AAA|AEP|CR\d+)\s*)/)
-               .map(&:first)
-               .compact
-               .uniq
-               .map(&:strip)
+        .scan(/(\d+x\s*(AA|AAA|AEP|CR\d+)\s*)/)
+        .map(&:first)
+        .compact
+        .uniq
+        .map(&:strip)
 
       type = value
-             .scan(/(PEQ|LiPo|NiMH|tubo|palo|stick|barra|lapiz|Butterfly|mariposa)/i)
-             .map(&:first)
-             .compact
-             .uniq
-             .map(&:strip)
+        .scan(/(PEQ|LiPo|NiMH|tubo|palo|stick|barra|lapiz|Butterfly|mariposa)/i)
+        .map(&:first)
+        .compact
+        .uniq
+        .map(&:strip)
 
       type = type.map do |t|
         clean = STICK_BATTERIES.include?(t.downcase) ? 'Stick' : t
@@ -882,9 +909,9 @@ class AireSuave < Thor
       cap3 = value.match(/(\d+)/)
 
       compatibility = value
-                      .scan(/(#{MAG_TYPES.join "|"})/i)
-                      .map(&:first)
-                      .map(&:strip)
+        .scan(/(#{MAG_TYPES.join "|"})/i)
+        .map(&:first)
+        .map(&:strip)
 
       return nil if cap1.nil? && cap2.nil? && compatibility.nil?
 
@@ -941,6 +968,20 @@ class AireSuave < Thor
     end
 
     def clean_type(value)
+      value
+    end
+
+    def clean_title(value)
+      known_word_issues = { 
+        'mgazine' => 'Magazine',
+      }
+
+      cv = value.downcase.tr('áéíóú', 'aeiou')
+      known_word_issues
+        .keys
+        .select { |word| cv.include? word }
+        .each { |word| value.gsub! /#{word}/i, known_word_issues[word] }
+
       value
     end
 

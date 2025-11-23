@@ -288,7 +288,7 @@ class VetaAirsoft < Thor
       # Add a search corpus to optimize text query
       clean_products.each do |p|
         p['search_corpus'] = generate_search_corpus(
-          p, 
+          p,
           %w[title gearbox magazine maker license motor speed system firing_mode description]
         )
       end
@@ -302,12 +302,13 @@ class VetaAirsoft < Thor
       puts '[*] Scraping products details...'
 
       count = 0
-      urls.map do |url|
+      urls.map do |hsh|
         count += 1
-        doc = fetch_html url
+        doc = fetch_html hsh[:url]
 
         record = {
-          url: url,
+          url: hsh[:url],
+          section: hsh[:section],
           title: doc.css('h1#product-name').text,
           price: {
             amount: doc.css('h4#price_display').text.strip.gsub(/[^0-9.]+/, '').to_f,
@@ -369,7 +370,9 @@ class VetaAirsoft < Thor
         loop do
           payload = fetch_json "#{BASE_URL}#{section}/page/#{page}/?results_only=true&limit=100&theme=cubo"
           doc = Nokogiri::HTML payload['html']
-          urls.concat doc.css(link_style).map { |l| l['href'] }.uniq
+
+          page_urls = doc.css(link_style).map { |l| l['href'] }.uniq
+          urls.concat(page_urls.map { |url| { url: url, section: section } })
 
           break unless payload['has_next']
 
