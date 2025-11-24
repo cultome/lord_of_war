@@ -15,60 +15,72 @@ require 'sqlite3'
 require 'thor'
 require_relative 'utils'
 
-class VetaAirsoft < Thor
+class Tactishop < Thor
   include Utils
 
-  DATA_FOLDER = "#{File.dirname __FILE__}/../data/vetaairsoft"
+  DATA_FOLDER = "#{File.dirname __FILE__}/../data/tactishop"
 
-  BASE_URL = 'https://vetaairsoft.com'
+  BASE_URL = 'https://www.tactishop.mx'
 
   SECTIONS = [
-    '/accesorios/accesorios-para-casco',
-    '/accesorios/bipodes-y-empunaduras',
-    '/accesorios/chalecos-tacticos',
-    '/accesorios/cinturones',
-    '/accesorios/fundas',
-    '/accesorios/gorras',
-    '/accesorios/guantes',
-    '/accesorios/porta-fusiles',
-    '/accesorios/rails-rieles',
-    '/accesorios/rails-rieles/anillas',
-    '/accesorios',
-    '/accesorios1/encendedores',
-    '/accesorios1/palestinas',
-    '/accesorios1/parches',
-    '/accesorios1/relojes',
-    '/accesorios1',
-    '/caja-sorpresa',
-    '/camping',
-    '/camping/multierramientas',
-    '/consumibles',
-    '/miras-tacticas',
-    '/mochilas',
-    '/mochilas/pecheras',
-    '/pouches',
-    '/protecciones',
-    '/pulseras',
-    '/pulseras/gorras-gorros',
-    '/replicas/accesorios-y-consumibles/baterias-y-cargadores',
-    '/replicas/accesorios-y-consumibles/bbs-y-gas',
-    '/replicas/accesorios-y-consumibles/culatas',
-    '/replicas/accesorios-y-consumibles/granadas',
-    '/replicas/accesorios-y-consumibles/mags',
-    '/replicas/accesorios-y-consumibles/miras',
-    '/replicas/accesorios-y-consumibles/otros',
-    '/replicas/accesorios-y-consumibles',
-    '/replicas/primarias',
-    '/replicas/secundarias',
-    '/ropa',
-    '/seguridad/calzado',
-    '/seguridad/cuchilleria',
-    '/seguridad/linternas',
-    '/seguridad',
-    '/torniquetes',
+    '/categorias/replicas',
+    '/categorias/equipamiento-tactico',
+    '/categorias/partes-y-accesorios/cargadores',
+    '/categorias/partes-y-accesorios/bb-y-gas',
+    '/categorias/partes-y-accesorios/baterias',
+    '/categorias/novritsch/equipamiento-novritsch/camuflaje-novritsch',
   ]
 
   STAGES = %w[urls details clean audit]
+
+  desc 'scrap', 'Scrap site'
+  option :from, type: :string, default: 'urls', desc: "Start scraping from a given stage. Valid options: #{STAGES.join ", "}"
+  option :audit, type: :boolean, deafult: false
+  def scrap
+    initial_stage = STAGES.find_index options[:from]
+
+    urls = if initial_stage > 0 # urls
+             puts '[*] Loading URLs from cache...'
+             JSON.parse File.read("#{DATA_FOLDER}/product_urls.json")
+           else
+             urls = scrap_products_list
+             File.write "#{DATA_FOLDER}/product_urls.json", urls.to_json
+
+             existing = {}
+             urls.select do |hsh|
+               if existing.key? hsh['url']
+                 false
+               else
+                 existing[hsh['url']] = true
+                 true
+               end
+             end
+           end
+
+    products = if initial_stage > 1 # details
+                 puts '[*] Loading product details from cache...'
+                 JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
+               else
+                 products = scrap_product_details urls
+                 File.write "#{DATA_FOLDER}/product_details.json", products.to_json
+
+                 products
+               end
+
+    clean_products = if initial_stage > 2 # clean
+                       puts '[*] Loading clean products from cache...'
+                       JSON.parse File.read("#{DATA_FOLDER}/clean.json")
+                     else
+                       clean_products = clean_records products
+                       File.write "#{DATA_FOLDER}/clean.json", clean_products.to_json
+
+                       clean_products
+                     end
+
+    audit_props DATA_FOLDER, clean_products if options[:audit]
+
+    puts '[+] Done!'
+  end
 
   desc 'upload FILE', 'Load data in DB'
   def upload(file)
@@ -144,7 +156,6 @@ class VetaAirsoft < Thor
                      db.execute(
                        upd_products_sql,
                        [
-                         rec['id'],
                          rec['search_corpus'],
                          rec['title'],
                          rec['url'],
@@ -162,6 +173,7 @@ class VetaAirsoft < Thor
                          speed_id,
                          system_id,
                          thread_direction_id,
+                         rec['id'],
                        ]
                      ).map { |row| row['id'] }.first
                    end
@@ -204,140 +216,20 @@ class VetaAirsoft < Thor
     end
   end
 
-  desc 'scrap', 'Scrap site'
-  option :from, type: :string, default: 'urls', desc: "Start scraping from a given stage. Valid options: #{STAGES.join ", "}"
-  option :audit, type: :boolean, deafult: false
-  def scrap
-    initial_stage = STAGES.find_index options[:from]
-
-    urls = if initial_stage > 0 # urls
-             puts '[*] Loading URLs from cache...'
-             JSON.parse File.read("#{DATA_FOLDER}/product_urls.json")
-           else
-             urls = scrap_products_list
-             File.write "#{DATA_FOLDER}/product_urls.json", urls.to_json
-
-             existing = {}
-             urls.select do |hsh|
-               if existing.key? hsh['url']
-                 false
-               else
-                 existing[hsh['url']] = true
-                 true
-               end
-             end
-           end
-
-    products = if initial_stage > 1 # details
-                 puts '[*] Loading product details from cache...'
-                 JSON.parse File.read("#{DATA_FOLDER}/product_details.json")
-               else
-                 products = scrap_product_details urls
-                 File.write "#{DATA_FOLDER}/product_details.json", products.to_json
-
-                 products
-               end
-
-    clean_products = if initial_stage > 2 # clean
-                       puts '[*] Loading clean products from cache...'
-                       JSON.parse File.read("#{DATA_FOLDER}/clean.json")
-                     else
-                       clean_products = clean_records products
-                       File.write "#{DATA_FOLDER}/clean.json", clean_products.to_json
-
-                       clean_products
-                     end
-
-    audit_props DATA_FOLDER, clean_products if options[:audit]
-
-    puts '[+] Done!'
-  end
-
   no_commands do
     def overwrite_category_by_url!(acc, prod)
-      # replica
-      if prod['section'] == '/replicas/primarias'
+      if prod['section'] == '/categorias/replicas'
         acc['category'] = 'replica'
-      elsif prod['section'] == '/replicas/secundarias'
-        acc['category'] = 'replica'
-        # misc
-      elsif prod['section'] == '/accesorios1/parches'
-        acc['category'] = 'misc'
-      elsif prod['section'] == '/accesorios1/encendedores'
-        acc['category'] = 'misc'
-      elsif prod['section'] == '/accesorios1/relojes'
-        acc['category'] = 'misc'
-      elsif prod['section'] == '/camping'
-        acc['category'] = 'misc'
-      elsif prod['section'] == '/camping/multierramientas'
-        acc['category'] = 'misc'
-      elsif prod['section'] == '/caja-sorpresa'
-        acc['category'] = 'misc'
-        # accesories
-      elsif prod['section'] == '/accesorios/bipodes-y-empunaduras'
+      elsif prod['section'] == '/categorias/equipamiento-tactico'
+        acc['category'] = 'gear'
+      elsif prod['section'] == '/categorias/partes-y-accesorios/cargadores'
         acc['category'] = 'accessories'
-      elsif prod['section'] == '/accesorios/rails-rieles'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/accesorios/rails-rieles/anillas'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/torniquetes'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/miras-tacticas'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/protecciones'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/culatas'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/granadas'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/baterias-y-cargadores'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/miras'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/mags'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/pulseras'
-        acc['category'] = 'accessories'
-        # gear
-      elsif prod['section'] == '/ropa'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/pulseras/gorras-gorros'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/mochilas'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/chalecos-tacticos'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/fundas'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/accesorios-para-casco'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/porta-fusiles'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/guantes'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/cinturones'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios/gorras'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/pouches'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/mochilas/pecheras'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/accesorios1/palestinas'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/seguridad/calzado'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/seguridad/linternas'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/seguridad/cuchilleria'
-        acc['category'] = 'gear'
-        # consumable
-      elsif prod['section'] == '/consumibles'
+      elsif prod['section'] == '/categorias/partes-y-accesorios/bb-y-gas'
         acc['category'] = 'consumable'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/bbs-y-gas'
-        acc['category'] = 'consumable'
-      elsif prod['section'] == '/replicas/accesorios-y-consumibles/otros'
-        acc['category'] = 'consumable'
+      elsif prod['section'] == '/categorias/partes-y-accesorios/baterias'
+        acc['category'] = 'accessories'
+      elsif prod['section'] == '/categorias/novritsch/equipamiento-novritsch/camuflaje-novritsch'
+        acc['category'] = 'gear'
       end
     rescue StandardError
       puts "Unable to overwrite category for [#{prod.inspect}]"
@@ -435,79 +327,79 @@ class VetaAirsoft < Thor
 
         doc = fetch_html hsh['url']
 
+        details = doc.css('div.summary-inner.wd-set-mb').first
+        desc = doc.css('div.woocommerce-product-details__short-description').text
+        feats = doc.css('div.woocommerce-product-details__short-description li').map(&:text).join(' ')
+
+        all_specs = doc
+                    .css('div#tab-description p')
+                    .flat_map { |p| p.text.split("\n") }
+                    .select { |txt| txt.include? ': ' }
+                    .map { |txt| txt.split(': ') }
+                    .map { |prop, value| [props_dict.fetch(clean_prop_name(prop), prop), value] }
+
+        specs = all_specs.select { |key, _value| allowed_keys.include? key.downcase }
+        non_specs = all_specs.reject { |key, _value| allowed_keys.include? key.downcase }
+
+        other_texts = doc
+                      .css('div#tab-description p')
+                      .flat_map { |p| p.text.split("\n") }
+                      .reject { |txt| txt.include? ':' }
+
+        desc = [
+          desc,
+          feats,
+          other_texts.join(' '),
+          non_specs.map { |s| s.join(': ') }.join('. '),
+        ].map(&:strip).join(' ').strip
+
+        imgs = doc.css('div.wd-carousel img').flat_map { |i| i.attr('data-srcset').split.first }
+        imgs = doc.css('img.wp-post-image').map { |i| i.attr 'src' } if imgs.empty?
+
         record = {
           'id' => Digest::SHA256.hexdigest(hsh['url'])[0, 16],
           'url' => hsh['url'],
           'section' => hsh['section'],
-          'title' => doc.css('h1#product-name').text,
+          'title' => details.css('h1.product_title').first.text.strip,
           'price' => {
-            'amount' => doc.css('h4#price_display').text.strip.gsub(/[^0-9.]+/, '').to_f,
+            'amount' => details.css('span.woocommerce-Price-amount.amount').first.text.strip.gsub(/[^0-9.]+/, '').to_f,
             'currency' => 'MXN',
           },
-          'img' => doc.css('div.swiper-wrapper.align-items-center img')
-                      .map { |i| i['data-srcset'] }
-                      .compact
-                      .map { |url| url.split(', ').map(&:split).map(&:first) }
-                      .flatten
-                      .map { |url| "https:#{url}" },
+          'img' => imgs,
+          'description' => desc,
         }
 
-        feats = doc.css 'div.product-description.user-content ul.productfeatures li'
+        record.merge! Hash[specs] if specs
 
-        if feats.empty?
-          desc = doc.css('div.product-description.user-content p').map(&:text).join.gsub("\r\n", ' ')
-
-          record.merge! 'description' => desc
-        else
-          texts = feats.flat_map { |e| e.css('strong,span') }.map(&:text)
-
-          specs = {}
-          desc = []
-          idx = 0
-          loop do
-            break if idx >= texts.size
-
-            if texts[idx].end_with? ':'
-              unless texts[idx + 1].strip.end_with? ':'
-                prop = texts[idx][0..-2]
-                specs[props_dict.fetch(prop, prop)] = texts[idx + 1].gsub(' ', ' ').strip
-                idx += 1
-              end
-            else
-              desc << texts[idx]
-            end
-
-            idx += 1
-          end
-
-          record.merge!('description' => desc.join, **specs)
-        end
+        record
+      rescue StandardError => e
+        binding.pry
       end
     end
 
     def scrap_products_list
       puts '[*] Scraping product list...'
 
-      link_style = 'div.js-item-description-container.item-description-container.p-2.p-md-4.shadow-none.position-absolute.w-100.transition-soft a'
       urls = []
 
       SECTIONS.each do |section|
         page = 1
 
         loop do
-          payload = fetch_json "#{BASE_URL}#{section}/page/#{page}/?results_only=true&limit=100&theme=cubo"
-          doc = Nokogiri::HTML payload['html']
+          payload = fetch_json "#{BASE_URL}#{section}/page/#{page}/?loop=60&woo_ajax=1"
+          doc = Nokogiri::HTML payload['items']
 
-          page_urls = doc.css(link_style).map { |l| l['href'] }.uniq
+          page_urls = doc.css('div.product-element-top>a').map { |a| a.attr 'href' }
           urls.concat(page_urls.map { |url| { 'url' => url, 'section' => section } })
 
-          break unless payload['has_next']
+          break if payload['nextPage'].blank?
 
           page += 1
+        rescue StandardError => e
+          puts "[-] Error scraping product list: #{e.message}"
+          binding.pry
+          break
         end
-      rescue StandardError => e
-        puts "[-] Error scraping product list: #{e.message}"
-        binding.pry
       end
 
       urls
@@ -552,11 +444,11 @@ class VetaAirsoft < Thor
 
     def allowed_keys
       @allowed_keys ||= %w[
-        id
         battery
         bb
         capacity
         charger
+        color
         description
         diameter
         dimensions
@@ -567,63 +459,73 @@ class VetaAirsoft < Thor
         gearbox
         hardness
         hop_up
+        id
         img
         inner_barrel
+        length
         magazine
         magnification
         maker
         materials
+        mosfet
         motor
         outer_barrel
+        package_contents
+        performance
+        power
         price
         range
         speed
         system
         thread_direction
         title
+        trigger
         type
         url
         voltage
+        weight
       ]
     end
 
     def props_dict
       @props_dict ||= {
-        'altura' => 'height',
-        'ancho' => 'width',
+        'barril_interior' => 'inner_barrel',
         'batera' => 'battery',
-        'batera_seguridad' => 'battery',
-        'caja_cambios' => 'gearbox',
-        'can_exterior' => 'outer_barrel',
-        'can_interior' => 'inner_barrel',
-        'can_interno' => 'inner_barrel',
+        'caja_gearbox' => 'gearbox',
+        'caon_interno' => 'inner_barrel',
+        'capacidad' => 'capacity',
         'capacidad_cargador' => 'capacity',
         'cargador' => 'magazine',
-        'cilindro_interno' => 'inner_barrel',
-        'direccin_rosca' => 'thread_direction',
-        'el_paquete_incluye' => 'package_contents',
-        'espaol_longitud' => 'length',
+        'color' => 'color',
+        'dimensiones' => 'dimensions',
+        'energa' => 'system',
         'fabricante' => 'maker',
-        'fps' => 'fps_range',
-        'guardamanos_ajustable_longitud' => 'length',
+        'gas' => 'gas',
+        'gatillo_electrnico' => 'trigger',
+        'gearbox' => 'gearbox',
+        'hop_up' => 'hop_up',
         'hopup' => 'hop_up',
         'incluye' => 'package_contents',
+        'inner_barrel' => 'inner_barrel',
+        'largo' => 'length',
         'longitud' => 'length',
-        'longitud_can' => 'length',
+        'longitud_can_interno' => 'inner_barrel',
+        'longitud_mxima' => 'length',
         'modo_disparo' => 'firing_mode',
         'modos_disparo' => 'firing_mode',
-        'modos_disparo_preprogramados' => 'firing_mode',
+        'modos_fuego' => 'firing_mode',
+        'mosfet' => 'mosfet',
         'motor' => 'motor',
         'peso' => 'weight',
-        'peso_cargador' => 'weight',
-        'peso_cargador_cargador' => 'weight',
-        'peso_total' => 'weight',
+        'potencia' => 'power',
         'rango_fps' => 'fps_range',
+        'rendimiento' => 'performance',
         'rondas_segundo' => 'fire_rate',
-        'sistema_accin_cerrojo' => 'system'
-        'sistema_seguridad' => 'system',
-        'tipo_gas' => 'type',
-        'velocidad_inicial' => 'speed',
+        'rosca' => 'thread_direction',
+        'sistema' => 'system',
+        'tipo_gas' => 'gas',
+        'tipo_rosca' => 'thread_direction',
+        'tiros_segundo' => 'fire_rate',
         'velocidad_salida' => 'speed',
       }
     end
@@ -731,4 +633,4 @@ class VetaAirsoft < Thor
   end
 end
 
-VetaAirsoft.start ARGV
+Tactishop.start ARGV

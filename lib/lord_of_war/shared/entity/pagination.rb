@@ -24,11 +24,11 @@ class LordOfWar::Shared::Entity::Pagination
   end
 
   def next?
-    @total_records > 0 && @page <= @total_records / @page_size
+    @total_records > 0 && @page < last_page
   end
 
   def last_page
-    (@total_records / @page_size) + 1
+    (@total_records / @page_size.to_f).ceil
   end
 
   def pages
