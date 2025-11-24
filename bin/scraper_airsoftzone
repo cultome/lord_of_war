@@ -18,18 +18,9 @@ require_relative 'utils'
 class Tactishop < Thor
   include Utils
 
-  DATA_FOLDER = "#{File.dirname __FILE__}/../data/tactishop"
+  DATA_FOLDER = "#{File.dirname __FILE__}/../data/airsoftzone"
 
-  BASE_URL = 'https://www.tactishop.mx'
-
-  SECTIONS = [
-    '/categorias/replicas',
-    '/categorias/equipamiento-tactico',
-    '/categorias/partes-y-accesorios/cargadores',
-    '/categorias/partes-y-accesorios/bb-y-gas',
-    '/categorias/partes-y-accesorios/baterias',
-    '/categorias/novritsch/equipamiento-novritsch/camuflaje-novritsch',
-  ]
+  BASE_URL = 'https://airsoftzone.com.mx/wp-json/wp/v2/pages'
 
   STAGES = %w[urls details clean audit]
 
@@ -379,27 +370,39 @@ class Tactishop < Thor
 
     def scrap_products_list
       puts '[*] Scraping product list...'
-
       urls = []
 
-      SECTIONS.each do |section|
-        page = 1
+      payload = fetch_json BASE_URL
 
-        loop do
-          payload = fetch_json "#{BASE_URL}#{section}/page/#{page}/?loop=60&woo_ajax=1"
-          doc = Nokogiri::HTML payload['items']
+      payload.each do |section|
+        puts "[*] Scraping section [#{section["slug"]}]..."
+        section_urls = scrap_section section
 
-          page_urls = doc.css('div.product-element-top>a').map { |a| a.attr 'href' }
-          urls.concat(page_urls.map { |url| { 'url' => url, 'section' => section } })
+        urls.concat section_urls
+      end
 
-          break if payload['nextPage'].blank?
+      urls
+    end
 
-          page += 1
-        rescue StandardError => e
-          puts "[-] Error scraping product list: #{e.message}"
-          binding.pry
-          break
-        end
+    def scrap_section(section)
+      urls = []
+      payload = section
+
+      loop do
+        page_content = payload.dig 'content', 'rendered'
+        doc = Nokogiri::HTML page_content
+
+        page_urls = doc.css('.post-title a').map { |a| a.attr 'href' }
+
+        binding.pry if page_urls.empty?
+
+        urls.concat(page_urls.map { |url| { 'url' => url } })
+
+        next_page = payload.dig '_links', 'up', 0, 'href'
+
+        break if next_page.nil?
+
+        payload = fetch_json next_page
       end
 
       urls
@@ -428,17 +431,16 @@ class Tactishop < Thor
     def default_headers
       {
         'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0',
-        'Accept' => 'image/webp, application/json',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language' => 'en-US,en;q=0.5',
         'Accept-Encoding' => 'gzip, deflate, br, zstd',
-        'X-Requested-With' => 'XMLHttpRequest',
         'Connection' => 'keep-alive',
-        'Cookie' => '__cf_bm=mtmwoOFfSm3PFYshoJ3eBaNe6LTCl1ba.UYhMUmQ4L4-1762319728-1.0.1.1-NnLZ8QH9RXpBrLp.kmePDudWfi7Bn1fq8DjU_kdx3XZC34mkyoQw3kQfHrhMV3DPdqNvOKWSt.rUImWJZtqZGsMMomS82rSPGH42ubOhogI; _gcl_au=1.1.833731081.1762318566; newsletter-popup=1; _ga=GA1.2.1714847667.1762318566; _gid=GA1.2.2142166821.1762318566; tn_track=8b6529726fc3324ec5113e896f80b5e5c14526c7%7E3a3eef2c980db2e8d9f9f85bf37f9397b01e5308; x-rand-user=7ec4bfd161aa5e499acde766c63c8a862511a95e%7E3866; tn_tracksession=2675e7b2199cf16d65131eb172883b40b02dc132%7E17dd56264d2a50f92605c7b008499268904f67f5; store_session_payload_1981503=a5be91efb6826f819cb78cf9600339a1cbde7a7b%7EeyJpdiI6IlpianNWbnRjUzZySDVuWHdiOU9OWFE9PSIsInZhbHVlIjoidENnYllKemNXdUt6OU5jNnpWM3JYR0RYTXIvVng4NkRGdmtXTUJCeEZJV3p5eHcrRGM1Ry8vVWJTMy9xclBEbm9zMmorV0VRR1RMdGYrek92dUttcjUySFk4MVNBS3cxUm9rQUN4MGxsSHovaGV6K2x6SWhldDJNQys5YjIvYXBUYWkrZ1NmWDJpR2h1cEZXSXR6Qm9ad0liUHdqczBUS3pOajRuN05MY3kwMWE5RFNqWmFUbTlFYStxeko5UGFqbDhtR1FsSTQvSzUwL05IdU1RMzNKMzNPL0l3cGpsSWhOQnlsMzlreHV3emxueWRQZndsdDlpTEJPcGs1eUFIZ2txZ0Qwa2lUN1pLem95SnZMSkNvelNsMWtQRktsNnJZV2ZjVnFXc2JIKzlxU1A2a2YxYWwwSHN6QUJPRm0xZklEcTFaanpGeG80Y3l1SFFiRS9nWFhnPT0iLCJtYWMiOiJkY2YxMTY1NjE4OTVmNDIwZDU5NzdiM2Y1ZTY3MzIxNTM2MTUwMzBhNmUyZDNmNWNkMWJlNjU4OGE4MjQ1YThlIn0%3D; store_login_session=3be5fcabf721a65238e6e7cedb6c0ad66268ab5f%7Eae4c807e0e484a5cbdce427c3fee3b21297a94d1addc2ce5d49f0d0778c5be8e; _ga_Y01EEPH4TK=GS2.2.s1762318566$o1$g1$t1762320169$j60$l0$h0; _fbp=fb.1.1762318566702.154717759849449291; wpnViewcount=13; TPIDC=hiw3sp-9cwnmtde1-ujhdfbn2t1ar9is5y-eqpdmi48unhwfg-al1-wtc; cwdcc=false; cus=false; wallet-cross-store-impossible=false; _wpnlvusw=1; wpnLastDenial=1762318693034; cookie_consent=1; _wpn_cotpc=1; sdtpc=1',
-        'Sec-Fetch-Dest' => 'empty',
-        'Sec-Fetch-Mode' => 'cors',
-        'Sec-Fetch-Site' => 'same-origin',
-        'Priority' => 'u=4',
-        'TE' => 'trailers',
+        'Cookie' => '_wcmpid=f1ac9ba4-8e3c-43ee-b688-4e6df7c43945; PHPSESSID=dac0a6160682c732ab5ad7cca2b0e76b; sbjs_migrations=1418474375998%3D1; sbjs_current_add=fd%3D2025-09-24%2021%3A36%3A30%7C%7C%7Cep%3Dhttps%3A%2F%2Fairsoftzone.com.mx%2F%7C%7C%7Crf%3Dhttps%3A%2F%2Fwww.google.com%2F; sbjs_first_add=fd%3D2025-09-17%2001%3A02%3A22%7C%7C%7Cep%3Dhttps%3A%2F%2Fairsoftzone.com.mx%2F%7C%7C%7Crf%3Dhttps%3A%2F%2Fduckduckgo.com%2F; sbjs_current=typ%3Dorganic%7C%7C%7Csrc%3Dgoogle%7C%7C%7Cmdm%3Dorganic%7C%7C%7Ccmp%3D%28none%29%7C%7C%7Ccnt%3D%28none%29%7C%7C%7Ctrm%3D%28none%29%7C%7C%7Cid%3D%28none%29%7C%7C%7Cplt%3D%28none%29%7C%7C%7Cfmt%3D%28none%29%7C%7C%7Ctct%3D%28none%29; sbjs_first=typ%3Dreferral%7C%7C%7Csrc%3Dduckduckgo.com%7C%7C%7Cmdm%3Dreferral%7C%7C%7Ccmp%3D%28none%29%7C%7C%7Ccnt%3D%2F%7C%7C%7Ctrm%3D%28none%29%7C%7C%7Cid%3D%28none%29%7C%7C%7Cplt%3D%28none%29%7C%7C%7Cfmt%3D%28none%29%7C%7C%7Ctct%3D%28none%29; sbjs_udata=vst%3D25%7C%7C%7Cuip%3D%28none%29%7C%7C%7Cuag%3DMozilla%2F5.0%20%28X11%3B%20Linux%20x86_64%3B%20rv%3A142.0%29%20Gecko%2F20100101%20Firefox%2F142.0; woolentor_already_views_count_product=a%3A39%3A%7Bi%3A1758071653%3Bi%3A8120%3Bi%3A1758071665%3Bi%3A8790%3Bi%3A1758072092%3Bi%3A7737%3Bi%3A1758072105%3Bi%3A6915%3Bi%3A1758073328%3Bi%3A8310%3Bi%3A1758073371%3Bi%3A10534%3Bi%3A1758073379%3Bi%3A5237%3Bi%3A1758588155%3Bi%3A3190%3Bi%3A1758588922%3Bi%3A10713%3Bi%3A1758588944%3Bi%3A13232%3Bi%3A1758589017%3Bi%3A10710%3Bi%3A1758589097%3Bi%3A4008%3Bi%3A1758589229%3Bi%3A6539%3Bi%3A1758591241%3Bi%3A2105%3Bi%3A1758591273%3Bi%3A3969%3Bi%3A1758591639%3Bi%3A6571%3Bi%3A1758591788%3Bi%3A7964%3Bi%3A1758596589%3Bi%3A10617%3Bi%3A1758596639%3Bi%3A10612%3Bi%3A1758636934%3Bi%3A2568%3Bi%3A1758648647%3Bi%3A4360%3Bi%3A1758682346%3Bi%3A12617%3Bi%3A1758682368%3Bi%3A11562%3Bi%3A1758683234%3Bi%3A11624%3Bi%3A1758683440%3Bi%3A1917%3Bi%3A1758683621%3Bi%3A11622%3Bi%3A1758683645%3Bi%3A571%3Bi%3A1758684015%3Bi%3A11529%3Bi%3A1759296317%3Bi%3A7686%3Bi%3A1759296446%3Bi%3A8418%3Bi%3A1759296590%3Bi%3A1802%3Bi%3A1759296667%3Bi%3A10961%3Bi%3A1759296683%3Bi%3A5298%3Bi%3A1760987950%3Bi%3A500%3Bi%3A1760987972%3Bi%3A5807%3Bi%3A1761841909%3Bi%3A13300%3Bi%3A1761842175%3Bi%3A4355%3Bi%3A1761928664%3Bi%3A11538%3Bi%3A1763675757%3Bi%3A9454%3B%7D; woolentor_viewed_products_list=a%3A1%3A%7Bi%3A1763675757%3Bi%3A9454%3B%7D; _lscache_vary=65ed135a2d24664935e20f7587e8ddc3; sbjs_session=pgs%3D13%7C%7C%7Ccpg%3Dhttps%3A%2F%2Fairsoftzone.com.mx%2Fproductos-de-airsoft%2Fhttps-airsoftzone-com-mx-productos-de-airsoft-https-airsoftzone-com-mx-productos-de-airsoft-replicas-de-rifles-para-airsoft%2Freplicas-de-airsoft-tipo-asalto%2F',
+        'Upgrade-Insecure-Requests' => '1',
+        'Sec-Fetch-Dest' => 'document',
+        'Sec-Fetch-Mode' => 'navigate',
+        'Sec-Fetch-Site' => 'cross-site',
+        'Priority' => 'u=0',
       }
     end
 

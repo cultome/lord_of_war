@@ -19,6 +19,107 @@ class AireSuave < Thor
 
   DATA_FOLDER = "#{File.dirname __FILE__}/../data/aire_suave"
 
+  desc 'scrap', 'Scrap site'
+  def scrap
+    [
+      'https://airesuave.com.mx/categoria-producto/replicas/',
+      'https://airesuave.com.mx/categoria-producto/accesorios/',
+      'https://airesuave.com.mx/categoria-producto/baterias-y-cargadores/',
+      'https://airesuave.com.mx/categoria-producto/bbs-y-gas/',
+      'https://airesuave.com.mx/categoria-producto/equipo-tactico/',
+      'https://airesuave.com.mx/categoria-producto/sin-categorizar/',
+      'https://airesuave.com.mx/categoria-producto/ofertas/',
+    ].each do |url|
+      prods = scrap_product_list url
+      scrap_details prods, url
+
+      name = url.split('/').last.gsub '-', '_'
+      File.write "#{DATA_FOLDER}/aire_suave_#{name}.json", prods.to_json
+    end
+
+    puts '[+] Done!'
+  end
+
+  desc 'clean', 'Clean scrapped information'
+  option :output, type: :string, required: true
+  def clean
+    products = Dir
+               .children(DATA_FOLDER)
+               .select { |file| file.start_with?('aire_suave_') && file.end_with?('.json') }
+               .reduce([]) { |acc, file| acc + JSON.parse(File.read("#{DATA_FOLDER}/#{file}")) }
+
+    error_reports = {}
+    clean_products = products.each_with_object({}) do |prod, acc|
+      acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
+        key = props_dict.fetch clean_prop_name(key), key
+
+        unless allowed_keys.include? key
+          unless error_reports.key? key
+            error_reports[key] = true
+            # puts "[-] Key [#{key}] not allowed"
+          end
+          next
+        end
+
+        # handle confusion for charger (battery vs magazine)
+        key = 'magazine' if (key == 'charger') && is_magazine?(value)
+        key = 'charger' if (key == 'magazine') && is_charger?(value)
+        # remove compatibility_fps key
+        key = 'fps_range' if key == 'compatibility_fps'
+
+        clean_value = case key
+                      when 'battery' then clean_battery value
+                      when 'bb' then clean_bb value
+                      when 'charger' then clean_charger value
+                      when 'diameter' then clean_diameter value
+                      when 'dimensions' then clean_dimensions value
+                      when 'fps_range' then clean_fps_range value
+                      when 'gas' then clean_gas value
+                      when 'gearbox' then clean_gearbox value
+                      when 'hardness' then clean_hardness value
+                      when 'hop_up' then clean_hop_up value
+                      when 'inner_barrel' then clean_inner_barrel value
+                      when 'magazine' then clean_magazine value
+                      when 'magnification' then clean_magnification value
+                      when 'materials' then clean_materials value
+                      when 'motor' then clean_motor value
+                      when 'range' then clean_range value
+                      when 'speed' then clean_speed value
+                      when 'system' then clean_system value
+                      when 'thread_direction' then clean_thread_direction value
+                      when 'type' then clean_type value
+                      when 'voltage' then clean_voltage value
+                      when 'title'
+                        cv = clean_title value
+                        prod[key] = cv
+
+                        acc2.merge! extract_title_info cv
+
+                        overwrite_category_by_url! acc2, prod
+
+                        acc2['search_corpus'] = generate_search_corpus(
+                          prod, 
+                          %w[title battery bb charger diameter dimensions fps_range gas gearbox hardness hop_up inner_barrel magazine magnification materials motor range speed system thread_direction type voltage]
+                        )
+
+                        cv
+                      else
+                        value
+                      end
+
+        acc2[key] = clean_value
+      end
+    rescue StandardError => e
+      puts "\n[-] Error cleaning [#{prod}]: #{e}"
+    end.values
+
+    # audit_props clean_products
+
+    File.write options[:output], clean_products.to_json
+
+    puts '[+] Done!'
+  end
+
   desc 'upload FILE', 'Load data in DB'
   def upload(file)
     records = JSON.parse File.read(file)
@@ -152,108 +253,6 @@ class AireSuave < Thor
     rescue StandardError => e
       binding.pry
     end
-  end
-
-  desc 'clean', 'Clean scrapped information'
-  option :output, type: :string, required: true
-  def clean
-    products = Dir
-               .children(DATA_FOLDER)
-               .select { |file| file.start_with?('aire_suave_') && file.end_with?('.json') }
-               .reduce([]) { |acc, file| acc + JSON.parse(File.read("#{DATA_FOLDER}/#{file}")) }
-
-    error_reports = {}
-    clean_products = products.each_with_object({}) do |prod, acc|
-      acc[prod['url']] = prod.each_with_object(Hash.new { |h, k| h[k] = [] }) do |(key, value), acc2|
-        key = props_dict.fetch clean_prop_name(key), key
-
-        unless allowed_keys.include? key
-          unless error_reports.key? key
-            error_reports[key] = true
-            # puts "[-] Key [#{key}] not allowed"
-          end
-          next
-        end
-
-        # handle confusion for charger (battery vs magazine)
-        key = 'magazine' if (key == 'charger') && is_magazine?(value)
-        key = 'charger' if (key == 'magazine') && is_charger?(value)
-        # remove compatibility_fps key
-        key = 'fps_range' if key == 'compatibility_fps'
-
-        clean_value = case key
-                      when 'battery' then clean_battery value
-                      when 'bb' then clean_bb value
-                      when 'charger' then clean_charger value
-                      when 'diameter' then clean_diameter value
-                      when 'dimensions' then clean_dimensions value
-                      when 'fps_range' then clean_fps_range value
-                      when 'gas' then clean_gas value
-                      when 'gearbox' then clean_gearbox value
-                      when 'hardness' then clean_hardness value
-                      when 'hop_up' then clean_hop_up value
-                      when 'inner_barrel' then clean_inner_barrel value
-                      when 'magazine' then clean_magazine value
-                      when 'magnification' then clean_magnification value
-                      when 'materials' then clean_materials value
-                      when 'motor' then clean_motor value
-                      when 'range' then clean_range value
-                      when 'speed' then clean_speed value
-                      when 'system' then clean_system value
-                      when 'thread_direction' then clean_thread_direction value
-                      when 'type' then clean_type value
-                      when 'voltage' then clean_voltage value
-                      when 'title'
-                        cv = clean_title value
-                        prod[key] = cv
-
-                        acc2.merge! extract_title_info cv
-
-                        overwrite_category_by_url! acc2, prod
-
-                        acc2['search_corpus'] = generate_search_corpus(
-                          prod, 
-                          %w[title battery bb charger diameter dimensions fps_range gas gearbox hardness hop_up inner_barrel magazine magnification materials motor range speed system thread_direction type voltage]
-                        )
-
-                        cv
-                      else
-                        value
-                      end
-
-        acc2[key] = clean_value
-      end
-    rescue StandardError => e
-      puts "\n[-] Error cleaning [#{prod}]: #{e}"
-    end.values
-
-    # audit_props clean_products
-
-    File.write options[:output], clean_products.to_json
-
-    puts '[+] Done!'
-  end
-
-
-  desc 'scrap', 'Scrap site'
-  def scrap
-    [
-      'https://airesuave.com.mx/categoria-producto/replicas/',
-      'https://airesuave.com.mx/categoria-producto/accesorios/',
-      'https://airesuave.com.mx/categoria-producto/baterias-y-cargadores/',
-      'https://airesuave.com.mx/categoria-producto/bbs-y-gas/',
-      'https://airesuave.com.mx/categoria-producto/equipo-tactico/',
-      'https://airesuave.com.mx/categoria-producto/sin-categorizar/',
-      'https://airesuave.com.mx/categoria-producto/ofertas/',
-    ].each do |url|
-      prods = scrap_product_list url
-      scrap_details prods, url
-
-      name = url.split('/').last.gsub '-', '_'
-      File.write "#{DATA_FOLDER}/aire_suave_#{name}.json", prods.to_json
-    end
-
-    puts '[+] Done!'
   end
 
   no_commands do
