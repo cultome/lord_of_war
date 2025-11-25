@@ -209,21 +209,11 @@ class Tactishop < Thor
 
   no_commands do
     def overwrite_category_by_url!(acc, prod)
-      if prod['section'] == '/categorias/replicas'
+      if prod['description'].match?(/\breplica\b/i)
         acc['category'] = 'replica'
-      elsif prod['section'] == '/categorias/equipamiento-tactico'
-        acc['category'] = 'gear'
-      elsif prod['section'] == '/categorias/partes-y-accesorios/cargadores'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/categorias/partes-y-accesorios/bb-y-gas'
-        acc['category'] = 'consumable'
-      elsif prod['section'] == '/categorias/partes-y-accesorios/baterias'
-        acc['category'] = 'accessories'
-      elsif prod['section'] == '/categorias/novritsch/equipamiento-novritsch/camuflaje-novritsch'
-        acc['category'] = 'gear'
+      elsif acc['category'] == 'unknown'
+        acc['category'] = detect_category prod['description']
       end
-    rescue StandardError
-      puts "Unable to overwrite category for [#{prod.inspect}]"
     end
 
     def clean_records(products)
@@ -318,46 +308,40 @@ class Tactishop < Thor
 
         doc = fetch_html hsh['url']
 
-        details = doc.css('div.summary-inner.wd-set-mb').first
-        desc = doc.css('div.woocommerce-product-details__short-description').text
-        feats = doc.css('div.woocommerce-product-details__short-description li').map(&:text).join(' ')
+        # exclude out of stock
+        unless doc.css('span.outofstock.onsale').empty?
+          puts "[-] Out of stock product [#{hsh}]"
+          next
+        end
 
-        all_specs = doc
-                    .css('div#tab-description p')
-                    .flat_map { |p| p.text.split("\n") }
-                    .select { |txt| txt.include? ': ' }
-                    .map { |txt| txt.split(': ') }
-                    .map { |prop, value| [props_dict.fetch(clean_prop_name(prop), prop), value] }
+        details = doc.css('div.woocommerce_product_description').map(&:text).join(' ').strip
+        desc = doc.css('div.woocommerce-product-details__short-description').text.strip
+        specs = doc
+                .css('table.woocommerce-product-attributes tr')
+                .map { |tr| tr.css('th,td').map(&:text) }
+                .map { |prop, value| [translate_prop(prop), value] }
+                .select { |key, _value| allowed_keys.include? key.downcase }
 
-        specs = all_specs.select { |key, _value| allowed_keys.include? key.downcase }
-        non_specs = all_specs.reject { |key, _value| allowed_keys.include? key.downcase }
-
-        other_texts = doc
-                      .css('div#tab-description p')
-                      .flat_map { |p| p.text.split("\n") }
-                      .reject { |txt| txt.include? ':' }
-
-        desc = [
-          desc,
-          feats,
-          other_texts.join(' '),
-          non_specs.map { |s| s.join(': ') }.join('. '),
-        ].map(&:strip).join(' ').strip
-
-        imgs = doc.css('div.wd-carousel img').flat_map { |i| i.attr('data-srcset').split.first }
-        imgs = doc.css('img.wp-post-image').flat_map { |i| i.attr('data-src').split } if imgs.empty?
+        imgs = doc.css('div.slick-track img').flat_map { |i| i.attr('srcset').split.first }
+        if imgs.blank?
+          imgs = doc
+                 .css('div.wl-single-slider img')
+                 .flat_map { |i| i.attr('srcset')&.split }
+                 .compact
+                 .select { |url| url.start_with? 'http' }
+        end
 
         record = {
           'id' => Digest::SHA256.hexdigest(hsh['url'])[0, 16],
           'url' => hsh['url'],
-          'section' => hsh['section'],
-          'title' => details.css('h1.product_title').first.text.strip,
+          # 'section' => hsh['section'],
+          'title' => doc.css('h1.product_title').first.text.strip,
           'price' => {
-            'amount' => details.css('span.woocommerce-Price-amount.amount').first.text.strip.gsub(/[^0-9.]+/, '').to_f,
+            'amount' => doc.css('div.tp-woo-price span.woocommerce-Price-amount.amount').last.text.strip.gsub(/[^0-9.]+/, '').to_f,
             'currency' => 'MXN',
           },
           'img' => imgs,
-          'description' => desc,
+          'description' => [desc, details].join(' ').strip,
         }
 
         record.merge! Hash[specs] if specs
@@ -365,23 +349,14 @@ class Tactishop < Thor
         record
       rescue StandardError => e
         binding.pry
-      end
+      end.compact
     end
 
     def scrap_products_list
       puts '[*] Scraping product list...'
-      urls = []
 
-      payload = fetch_json BASE_URL
-
-      payload.each do |section|
-        puts "[*] Scraping section [#{section["slug"]}]..."
-        section_urls = scrap_section section
-
-        urls.concat section_urls
-      end
-
-      urls
+      payload = fetch_html 'https://airsoftzone.com.mx/wp-sitemap-posts-product-1.xml'
+      payload.css('loc').map(&:text).map { |loc| { 'url' => loc } }
     end
 
     def scrap_section(section)
@@ -393,8 +368,6 @@ class Tactishop < Thor
         doc = Nokogiri::HTML page_content
 
         page_urls = doc.css('.post-title a').map { |a| a.attr 'href' }
-
-        binding.pry if page_urls.empty?
 
         urls.concat(page_urls.map { |url| { 'url' => url } })
 
@@ -487,6 +460,10 @@ class Tactishop < Thor
         voltage
         weight
       ]
+    end
+
+    def translate_prop(value)
+      props_dict.fetch clean_prop_name(value), value
     end
 
     def props_dict

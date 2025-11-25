@@ -1,4 +1,6 @@
 class LordOfWar::Catalog::Entity::Product
+  include LordOfWar::Shared::Utils
+
   SINGLE_VALUE_PROP = %w[
     title
   ]
@@ -52,7 +54,7 @@ class LordOfWar::Catalog::Entity::Product
   def price
     return nil if @props['price'].blank?
 
-    "$#{@props["price"]} MXN"
+    "$#{to_money_format @props["price"]} MXN"
   end
 
   def fps_range
