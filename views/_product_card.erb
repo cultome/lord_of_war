@@ -4,7 +4,7 @@
     <%= partial :fav_button, product: product, is_active: favs.key?(product.id) %>
   </div>
 
-  <div class="card-body">
+  <label class="card-body" for="modal-2" hx-get="/edit/<%= product.id %>" hx-target="#edit-product-modal" hx-swap="outerHTML">
     <div class="card-title">
       <%= product.title %>
     </div>
@@ -30,5 +30,5 @@
     <div class="text-danger">
       <%= product.price %>
     </div>
-  </div>
+  </label>
 </div>

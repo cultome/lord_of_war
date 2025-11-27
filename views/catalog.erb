@@ -9,9 +9,9 @@
     <!-- Card begin -->
     <% products.each do |product| %>
       <% if account.user.role == 'admin' %>
-        <label class="col col-3" for="modal-2" hx-get="/edit/<%= product.id %>" hx-target="#edit-product-modal" hx-swap="outerHTML">
+        <div class="col col-3">
           <%= partial :product_card, product: product, favs: favs %>
-        </label>
+        </div>
       <% else %>
         <a class="col col-3 card-link" href="<%= product.url %>" target="_blank">
           <%= partial :product_card, product: product, favs: favs %>
