@@ -1,3 +1,7 @@
-<button class="img-action-btn fav-btn <%= 'removed' if defined?(was_removed) && was_removed %> <%= 'active' if is_active %>" id="fav<%= product.id %>" hx-post="/fav-toggle/<%= product.id %>" hx-swap="outerHTML">
+<button 
+  class="img-action-btn fav-btn <%= 'removed' if defined?(was_removed) && was_removed %> <%= 'active' if is_active %>" 
+  hx-post="/fav-toggle/<%= product.id %>" 
+  hx-swap="outerHTML"
+  id="fav<%= product.id %>">
   <%= partial :heart_svg %>
 </button>

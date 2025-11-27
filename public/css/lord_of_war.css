@@ -190,8 +190,8 @@ footer a {
 }
 
 .img-wrapper {
-  position: relative; /* El contenedor será el punto de referencia */
-  display: inline-block; /* Permite que se ajuste al tamaño de la imagen */
+  position: relative;
+  display: inline-block;
 }
 
 .img-action-btn {
@@ -243,7 +243,6 @@ footer a {
 }
 
 .fav-btn svg {
-  /* transition: all ease-in 0.3s; */
   transform: scale(1);
   stroke: var(--danger);
   stroke-width: 4px;
@@ -680,4 +679,28 @@ a.delete-btn {
 
 .title-separator hr {
   margin: 0 20px;
+}
+
+.modal-text div.row {
+  margin-bottom: 0;
+}
+
+.modal-text div.col {
+  display: flex;
+  align-items: end;
+}
+
+.big-modal {
+  height: 80vh;
+  overflow-y: auto;
+}
+
+.img-details-container {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+}
+
+.img-details-container img {
+  height: 100%;
 }

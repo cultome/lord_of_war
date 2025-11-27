@@ -620,7 +620,7 @@ class VetaAirsoft < Thor
         'peso_total' => 'weight',
         'rango_fps' => 'fps_range',
         'rondas_segundo' => 'fire_rate',
-        'sistema_accin_cerrojo' => 'system'
+        'sistema_accin_cerrojo' => 'system',
         'sistema_seguridad' => 'system',
         'tipo_gas' => 'type',
         'velocidad_inicial' => 'speed',

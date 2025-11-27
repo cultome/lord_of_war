@@ -334,7 +334,6 @@ class Tactishop < Thor
         record = {
           'id' => Digest::SHA256.hexdigest(hsh['url'])[0, 16],
           'url' => hsh['url'],
-          # 'section' => hsh['section'],
           'title' => doc.css('h1.product_title').first.text.strip,
           'price' => {
             'amount' => doc.css('div.tp-woo-price span.woocommerce-Price-amount.amount').last.text.strip.gsub(/[^0-9.]+/, '').to_f,

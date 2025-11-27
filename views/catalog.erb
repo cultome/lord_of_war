@@ -8,43 +8,24 @@
 
     <!-- Card begin -->
     <% products.each do |product| %>
-      <a class="col col-3 card-link" href="<%= product.url %>" target="_blank">
-        <div class="border card">
-          <div class="img-wrapper">
-            <img class="product-img" src="<%= product.list_img %>" />
-            <%= partial :fav_button, product: product, is_active: favs.key?(product.id) %>
-          </div>
-
-          <div class="card-body">
-            <div class="card-title"><%= product.title %></div>
-
-            <% if product.specs? %>
-              <div class="card-text specs text-secondary">
-                <% product.specs.each do |prop, value| %>
-                  <div class="spec-value" title="<%= prop %>">
-                    <%= value %>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-
-            <% if product.tags? %>
-              <div>
-                <% product.tags do |tag| %>
-                  <div>tag</div>
-                <% end %>
-              </div>
-            <% end%>
-
-            <div class="text-danger">
-              <%= product.price %>
-            </div>
-          </div>
-        </div>
-      </a>
+      <% if account.user.role == 'admin' %>
+        <label class="col col-3" for="modal-2" hx-get="/edit/<%= product.id %>" hx-target="#edit-product-modal" hx-swap="outerHTML">
+          <%= partial :product_card, product: product, favs: favs %>
+        </label>
+      <% else %>
+        <a class="col col-3 card-link" href="<%= product.url %>" target="_blank">
+          <%= partial :product_card, product: product, favs: favs %>
+        </a>
+      <% end %>
     <% end %>
     <!-- Card end -->
   </div>
 
   <%= partial :pagination, pagination: pagination %>
+
+  <input class="modal-state" id="modal-2" type="checkbox">
+  <div class="modal">
+    <label class="modal-bg" for="modal-2"></label>
+    <div class="modal-body" id="edit-product-modal"></div>
+  </div>
 </form>

@@ -40,4 +40,10 @@ module LordOfWar::Shared::Helpers
 
     "#{time.day} de #{months[time.month - 1]} - #{time.strftime "%H:%M"} hrs"
   end
+
+  def options_for(catalog)
+    catalog.map do |id, name|
+      "<option value=\"#{id}\">#{name}</option>"
+    end
+  end
 end

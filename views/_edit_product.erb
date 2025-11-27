@@ -1,0 +1,155 @@
+<div class="modal-body" id="edit-product-modal">
+  <label class="btn-close" for="modal-2">X</label>
+  <h4 class="modal-title"><%= product.title %></h4>
+  <div class="modal-text big-modal">
+    <div class="img-details-container">
+      <% product.img.each do |url| %>
+        <img src="<%= url %>">
+      <% end %>
+    </div>
+
+    <form>
+      <div class="form-group">
+        <label for="url">URL</label>
+        <input type="text" class="input-block" id="url" name="url" value=<%= product.url %>>
+      </div>
+
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" class="input-block" id="title" name="title" value=<%= product.title %>>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea rows="10" class="input-block" id="description" name="description"><%= product.description %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="price">Price</label>
+        <input type="text" class="input-block" id="price" name="price" value=<%= product.price %>>
+      </div>
+
+      <div class="form-group">
+        <label for="category_id">Category</label>
+        <select class="input-block" id="category_id" name="category_id">
+          <%= options_for category_catalog %>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="capacity_id">Capacity</label>
+            <select class="input-block" id="capacity_id" name="capacity_id">
+              <%= options_for capacity_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="magazine_id">Magazine</label>
+            <select class="input-block" id="magazine_id" name="magazine_id">
+              <%= options_for magazine_catalog %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="gearbox_id">Gearbox</label>
+            <select class="input-block" id="gearbox_id" name="gearbox_id">
+              <%= options_for gearbox_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="fps_range_id">FPS Range</label>
+            <select class="input-block" id="fps_range_id" name="fps_range_id">
+              <%= options_for fps_range_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="speed_id">Speed</label>
+            <select class="input-block" id="speed_id" name="speed_id">
+              <%= options_for speed_catalog %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="motor_id">Motor</label>
+            <select class="input-block" id="motor_id" name="motor_id">
+              <%= options_for motor_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="system_id">System</label>
+            <select class="input-block" id="system_id" name="system_id">
+              <%= options_for system_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="hop_up_id">Hop-Up</label>
+            <select class="input-block" id="hop_up_id" name="hop_up_id">
+              <%= options_for hop_up_catalog %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="inner_barrel_id">Inner Barrel</label>
+            <select class="input-block" id="inner_barrel_id" name="inner_barrel_id">
+              <%= options_for inner_barrel_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="thread_direction_id">Thread Direction</label>
+            <select class="input-block" id="thread_direction_id" name="thread_direction_id">
+              <%= options_for thread_direction_catalog %>
+            </select>
+          </div>
+        </div>
+
+        <div class="col col-4">
+          <div class="form-group">
+            <label for="outer_barrel_id">Outer Barrel</label>
+            <select class="input-block" id="outer_barrel_id" name="outer_barrel_id">
+              <%= options_for outer_barrel_catalog %>
+            </select>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="form-group">
+        <label for="tags">Tags</label>
+        <select id="tags" name="tags">
+        </select>
+      </div>
+    </form>
+  </div>
+  <label for="modal-2" class="paper-btn">Cerrar</label>
+</div>

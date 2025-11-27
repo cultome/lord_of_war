@@ -57,13 +57,70 @@ class LordOfWar::Catalog::Repository::Product
   end
 
   def find_product(id)
-    DB
-      .execute('SELECT * FROM products WHERE id = $1', [id])
-      .map { |rec| LordOfWar::Catalog::Entity::Product.parse_json rec }
-      .first
+    prods = DB
+            .execute('SELECT * FROM products WHERE id = $1', [id])
+            .map { |rec| LordOfWar::Catalog::Entity::Product.parse_json rec }
+
+    load_product_relations prods
+
+    prods.first
+  end
+
+  def get_capacity_catalog
+    get_catalog 'capacities'
+  end
+
+  def get_thread_direction_catalog
+    get_catalog 'thread_directions'
+  end
+
+  def get_system_catalog
+    get_catalog 'systems'
+  end
+
+  def get_speed_catalog
+    get_catalog 'speeds'
+  end
+
+  def get_motor_catalog
+    get_catalog 'motors'
+  end
+
+  def get_magazine_catalog
+    get_catalog 'magazines'
+  end
+
+  def get_outer_barrel_catalog
+    get_catalog 'outer_barrels'
+  end
+
+  def get_inner_barrel_catalog
+    get_catalog 'inner_barrels'
+  end
+
+  def get_hop_up_catalog
+    get_catalog 'hop_ups'
+  end
+
+  def get_gearbox_catalog
+    get_catalog 'gearboxes'
+  end
+
+  def get_fps_range_catalog
+    get_catalog 'fps_ranges'
+  end
+
+  def get_category_catalog
+    get_catalog 'categories'
   end
 
   private
+
+  def get_catalog(table)
+    DB
+      .execute("SELECT id, name FROM #{table} ORDER BY name")
+      .map { |rec| rec.values_at 'id', 'name' }
+  end
 
   def load_product_relations(products)
     product_ids = products.map(&:id)

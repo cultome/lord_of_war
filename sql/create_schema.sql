@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   real_name TEXT,
   blood_type TEXT,
   emergency_contact_name TEXT,
-  emergency_contact_phone TEXT
+  emergency_contact_phone TEXT,
+  role TEXT NOT NULL DEFAULT 'regular'
 );
 
 -- Equipment
@@ -256,4 +257,28 @@ CREATE TABLE IF NOT EXISTS listings_imgs (
   img_id TEXT NOT NULL,
   FOREIGN KEY (listing_id) REFERENCES listings(id)
   FOREIGN KEY (img_id) REFERENCES imgs(id)
+);
+
+-- Edits
+CREATE TABLE IF NOT EXISTS product_edits (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL,
+  edits TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (created_by ) REFERENCES users(id)
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Tags
+CREATE TABLE IF NOT EXISTS tags (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS product_tags (
+  product_id TEXT NOT NULL,
+  tag_id TEXT NOT NULL,
+  FOREIGN KEY (product_id) REFERENCES products(id)
+  FOREIGN KEY (tag_id) REFERENCES tags(id)
 );

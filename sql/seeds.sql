@@ -1,5 +1,5 @@
-INSERT INTO users(id, email, username, password, real_name, blood_type, emergency_contact_name, emergency_contact_phone) VALUES
-('74604fce-0953-4e87-93e5-e10e2b7389ff', 'csoria@cultome.io', 'cultome', '$2a$12$FXYZBBXgE5cvvsF.ia9t0.hPiyE/E/myy4vqNvWbE7ka4v6ZuI37.', 'Carlos Soria', 'op', 'Noel Soria', '5512345678');
+INSERT INTO users(id, email, username, password, real_name, blood_type, emergency_contact_name, emergency_contact_phone, role) VALUES
+('74604fce-0953-4e87-93e5-e10e2b7389ff', 'csoria@cultome.io', 'cultome', '$2a$12$FXYZBBXgE5cvvsF.ia9t0.hPiyE/E/myy4vqNvWbE7ka4v6ZuI37.', 'Carlos Soria', 'op', 'Noel Soria', '5512345678', 'admin');
 INSERT INTO categories(id, name, label_es, menu_order) VALUES 
 ('b0dddc66-4c0e-4fcc-b72a-75aaefc540ae','replica', 'Replicas', 1),
 ('b225470d-8022-4df4-b4a6-ad7551d3ee4e','accessories', 'Accesorios', 2), 
